@@ -4,17 +4,38 @@
 #include<SoftwareSerial.h> 
 
 SoftwareSerial btserial(3,2);
-// 아두이노의 RX는 블루투스의 TX에, 아두이노의 TX는 블루투스의 RX에 연결
-// 아두이노 3번 - 블루투스의 TX, 아두이노 2번 - 블루투스 RX
+//(아두이노의 RX는 블루투스의 TX에, 아두이노의 TX는 블루투스의 RX에 연결
 
-#define led 7 
-#define led2 6
+// 핀 정의
+const int enaPin = 6; // 모터 A 속도 제어 핀 (PWM)
+const int in1Pin = 5; // 모터 A 방향 제어 핀 1
+const int in2Pin = 4;  // 모터 A 방향 제어 핀 2
+
+const int in3Pin = 7;  // 모터 B 방향 제어 핀 1
+const int in4Pin = 8;  // 모터 B 방향 제어 핀 2
+const int enbPin = 9;  // 모터 B 속도 제어 핀 (PWM)
 
 void setup() {
   btserial.begin(9600); //아두이노와 블루투스끼리의 통신속도를 9600으로 지정
-  Serial.begin(9600);   //아두이노와 컴퓨터와의 통신속도도 9600으로 지정
-  pinMode(led,OUTPUT); 
-  pinMode(led2, OUTPUT);
+  Serial.begin(9600); //아두이노와 컴퓨터와의 통신속도도 9600으로 지정
+
+  // 핀 모드 설정
+  pinMode(enaPin, OUTPUT);
+  pinMode(in1Pin, OUTPUT);
+  pinMode(in2Pin, OUTPUT);
+  
+  pinMode(enbPin, OUTPUT);
+  pinMode(in3Pin, OUTPUT);
+  pinMode(in4Pin, OUTPUT);
+  
+  // 초기 상태 설정 (모터 정지)
+  analogWrite(enaPin, 0);
+  digitalWrite(in1Pin, LOW);
+  digitalWrite(in2Pin, LOW);
+  
+  analogWrite(enbPin, 0);
+  digitalWrite(in3Pin, LOW);
+  digitalWrite(in4Pin, LOW);
 }
 
 void loop() {
@@ -24,18 +45,23 @@ void loop() {
     char cmd = (char)btserial.read(); 
     //블루투스로부터 들어오는 값을 시리얼모니터에 출력
     Serial.println(cmd); 
-    if(cmd == 'a'){
-      // a를 입력하면 led ON
-      digitalWrite(led,HIGH);
+    if(cmd == 'a'){ // 가동
+      digitalWrite(in1Pin, HIGH);
+      digitalWrite(in2Pin, LOW);
+      analogWrite(enaPin, 255); // 모터 A 최대 속도
+  
+      digitalWrite(in3Pin, HIGH);
+      digitalWrite(in4Pin, LOW);
+      analogWrite(enbPin, 255); // 모터 B 최대 속도
     }    
-    else if(cmd == 'b'){ 
-      // b를 입력하면 led2 ON
-      digitalWrite(led2,HIGH); 
-    }
-    else if(cmd == 'c'){
-      // c를 입력하면 모든 led OFF
-      digitalWrite(led, LOW);
-      digitalWrite(led2, LOW);
+    else if(cmd == 'b'){ // 정지
+      analogWrite(enaPin, 0);
+      digitalWrite(in1Pin, LOW);
+      digitalWrite(in2Pin, LOW);
+  
+      analogWrite(enbPin, 0);
+      digitalWrite(in3Pin, LOW);
+      digitalWrite(in4Pin, LOW);
     }
   }
 }
