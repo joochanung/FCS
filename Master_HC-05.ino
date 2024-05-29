@@ -9,12 +9,34 @@ SoftwareSerial btserial(3,2);
 
 const int slaveSelectPin = 10;
 
+uint8_t transfer_SPI(uint8_t data){
+  // Activate slave
+  PORTB &= ~(1 << SS);
+
+  SPDR = data;
+  while (!(SPSR & (1 << SPIF)));
+
+  // Deactivate slave
+  PORTB |= (1 << SS);
+
+  return SPDR;
+}
+
+void init_Serial(){
+  // pinMode(slaveSelectPin, OUTPUT);
+  DDRB |= (1 << DDB2);
+  // servo.attach(9);
+  DDRB |= (1 << DDB1);
+  // digitalWrite(slaveSelectPin, HIGH);
+  PORTB |= (1 << SS); // SS를 비활성화 상태로 시작
+  // SPI.begin();
+  SPCR |= (1 << SPE) | (1 << MSTR) | (0 << SPR1) | (1 << SPR0);
+  Serial.begin(9600);
+  btserial.begin(9600);
+  // servo.write(0);
+}
 void setup() {
-  pinMode(slaveSelectPin, OUTPUT);
-  digitalWrite(slaveSelectPin, HIGH); // SS를 비활성화 상태로 시작
-  SPI.begin();
-  btserial.begin(9600); //아두이노와 블루투스끼리의 통신속도를 9600으로 지정
-  Serial.begin(9600); //아두이노와 컴퓨터와의 통신속도도 9600으로 지정
+  init_Serial();
 }
 
 void loop() {
@@ -41,10 +63,14 @@ void sendDataToSlave(int data){
   byte highByte = (data >> 8) & 0xFF; // 상위 8비트
   byte lowByte = data & 0xFF;         // 하위 8비트
 
-  digitalWrite(slaveSelectPin, LOW);   // 슬레이브 선택
-  SPI.transfer(highByte);              // 상위 바이트 전송
-  SPI.transfer(lowByte);               // 하위 바이트 전송
-  digitalWrite(slaveSelectPin, HIGH);  // 슬레이브 비선택
+  // digitalWrite(slaveSelectPin, LOW);
+  PORTB &= ~(1 << PB2);   // 슬레이브 선택
+  // SPI.transfer(highByte);              // 상위 바이트 전송
+  transfer_SPI(highByte);
+  transfer_SPI(lowByte);
+  // SPI.transfer(lowByte);               // 하위 바이트 전송
+  // digitalWrite(slaveSelectPin, HIGH);
+  PORTB |= (1 << PB2);  // 슬레이브 비선택
 
   Serial.print("Sent data: ");
   Serial.println(data);
