@@ -1,6 +1,3 @@
-// SPI + 서보 모터 테스트 코드
-// 서보 모터가 회전한 각도를 Master 아두이노가 값을 받아와 Serial 모니터에 출력 & Slave에 값 전달
-
 #include<SoftwareSerial.h> 
 #include <SPI.h>
 
