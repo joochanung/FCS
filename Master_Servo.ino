@@ -9,13 +9,23 @@ Servo servo;
 // 서보 모터 핀 
 const int slaveSelectPin = 10;
 
+uint8_t transfer_SPI(uint8_t data){
+  SPDR = data;
+  while (!(SPSR & (1 << SPIF)));
+  return SPDR;
+}
+
 void setup() {
-  pinMode(slaveSelectPin, OUTPUT);
-  digitalWrite(slaveSelectPin, HIGH); // SS를 비활성화 상태로 시작
-  SPI.begin();
+  // pinMode(slaveSelectPin, OUTPUT);
+  DDRB |= (1 << DDB2);
+  // digitalWrite(slaveSelectPin, HIGH);
+  PORTB |= (1 << PB2); // SS를 비활성화 상태로 시작
+  // SPI.begin();
+  SPCR |= (1 << SPE) | (1 << MSTR) | (0 << SPR1) | (1 << SPR0);
   Serial.begin(9600);
-  servo.attach(9);
-  servo.write(0);
+  // servo.attach(9);
+  DDRB |= (1 << DDB1);
+  // servo.write(0);
 }
 
 void loop() {
@@ -33,7 +43,16 @@ void loop() {
 
 int getMotorAngle(int angle) {
   // 모터 각도를 측정하는 코드를 여기에 작성합니다.
-  servo.write(angle);
+  // servo.write(angle);
+  // return angle;
+  int pulseWidth = map(angle, 0, 180, 1000, 2000);
+  // digitalWrite(servoPin, HIGH);
+  PORTB |= (1 << PB1);
+  delayMicroseconds(pulseWidth);
+  // digitalWrite(servoPin, LOW);
+  PORTB &= ~(1 << PB1);
+  delayMicroseconds(20000 - pulseWidth);
+
   return angle;
 }
 
@@ -41,10 +60,14 @@ void sendAngleToSlave(int angle) {
   byte highByte = (angle >> 8) & 0xFF; // 상위 8비트
   byte lowByte = angle & 0xFF;         // 하위 8비트
 
-  digitalWrite(slaveSelectPin, LOW);   // 슬레이브 선택
-  SPI.transfer(highByte);              // 상위 바이트 전송
-  SPI.transfer(lowByte);               // 하위 바이트 전송
-  digitalWrite(slaveSelectPin, HIGH);  // 슬레이브 비선택
+  // digitalWrite(slaveSelectPin, LOW);
+  PORTB &= ~(1 << PB2);   // 슬레이브 선택
+  // SPI.transfer(highByte);              // 상위 바이트 전송
+  transfer_SPI(highByte);
+  transfer_SPI(lowByte);
+  // SPI.transfer(lowByte);               // 하위 바이트 전송
+  // digitalWrite(slaveSelectPin, HIGH);
+  PORTB |= (1 << PB2);  // 슬레이브 비선택
 
   Serial.print("Sent angle: ");
   Serial.println(angle);

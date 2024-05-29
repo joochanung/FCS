@@ -24,23 +24,27 @@ void setup() {
   // pinMode(enaPin, OUTPUT);
   // pinMode(in1Pin, OUTPUT);
   // pinMode(in2Pin, OUTPUT);
-  DDRB &= ~0xB8;
+  // DDRB |= 0xB8;
+  DDRB |= (1 << PB0) | (1 << PB1) | (1 << PB2) | (1 << PB7);
 
   // pinMode(enbPin, OUTPUT);
   // pinMode(in3Pin, OUTPUT);
   // pinMode(in4Pin, OUTPUT);
-  DDRD &= ~0x03;
+  // DDRD |= 0x03;
+  DDRD |= (1 << PD3) | (1 << PD4) | (1 << PD5) | (1 << PD6);
   
   // 초기 상태 설정 (모터 정지)
   // analogWrite(enaPin, 0);
   // digitalWrite(in1Pin, LOW);
   // digitalWrite(in2Pin, LOW);
-  PORTB |= 0x00;
+  // PORTB &= ~0x00;
+  PORTB &= ~(1 << PB0) & ~(1 << PB7);
 
   // analogWrite(enbPin, 0);
   // digitalWrite(in3Pin, LOW);
   // digitalWrite(in4Pin, LOW);
-  PORTD |= 0x00;
+  // PORTD &= ~0x00;
+  PORTD &= ~(1 << PD4) & ~(1 << PD5);
 
   // Fast PWM
   TCCR2A |= (1 << WGM21) | (1 << WGM20);
@@ -71,8 +75,15 @@ void loop() {
   // analogWrite(enbPin, 255); //모터 B 속도 조절
   if (Serial.available()){
     pwm = 200;
-    PORTB |= 0xA0; // Pin 5, 7 HIGH
+    // PORTB |= 0xA0; // Pin 5, 7 HIGH
+    // 모터 A 제어
+    PORTD &= ~(1 << PD4); // in1Pin LOW
+    PORTD |= (1 << PD5); // in2Pin HIGH
+    OCR2A = pwm;
+
+    // 모터 B 제어
+    PORTB |= (1 << PB0); // in3Pin LOW
+    PORTB &= ~(1 << PB7); // in4Pin HIGH
+    OCR2B = pwm;
   }
 }
-
-// PS: 레지스터 비트로 변환 필요
