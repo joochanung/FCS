@@ -10,8 +10,15 @@ Servo servo;
 const int slaveSelectPin = 10;
 
 uint8_t transfer_SPI(uint8_t data){
+  // Activate slave
+  PORTB &= ~(1 << SS);
+
   SPDR = data;
   while (!(SPSR & (1 << SPIF)));
+
+  // Deactivate slave
+  PORTB |= (1 << SS);
+
   return SPDR;
 }
 
@@ -19,7 +26,7 @@ void setup() {
   // pinMode(slaveSelectPin, OUTPUT);
   DDRB |= (1 << DDB2);
   // digitalWrite(slaveSelectPin, HIGH);
-  PORTB |= (1 << PB2); // SS를 비활성화 상태로 시작
+  PORTB |= (1 << SS); // SS를 비활성화 상태로 시작
   // SPI.begin();
   SPCR |= (1 << SPE) | (1 << MSTR) | (0 << SPR1) | (1 << SPR0);
   Serial.begin(9600);
