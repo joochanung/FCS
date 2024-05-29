@@ -19,23 +19,46 @@ void setup() {
   btserial.begin(9600); //아두이노와 블루투스끼리의 통신속도를 9600으로 지정
   Serial.begin(9600); //아두이노와 컴퓨터와의 통신속도도 9600으로 지정
 
-  // 핀 모드 설정
-  pinMode(enaPin, OUTPUT);
-  pinMode(in1Pin, OUTPUT);
-  pinMode(in2Pin, OUTPUT);
+  // // 핀 모드 설정
+  // pinMode(enaPin, OUTPUT);
+  // pinMode(in1Pin, OUTPUT);
+  // pinMode(in2Pin, OUTPUT);
   
-  pinMode(enbPin, OUTPUT);
-  pinMode(in3Pin, OUTPUT);
-  pinMode(in4Pin, OUTPUT);
+  // pinMode(enbPin, OUTPUT);
+  // pinMode(in3Pin, OUTPUT);
+  // pinMode(in4Pin, OUTPUT);
+
+  DDRD |= (1 << PD6) | (1 << PD5) | (1 << PD4); // enaPin, in1Pin, in2Pin
+  DDRB |= (1 << PB1) | (1 << PB0) | (1 << PB3); // enbPin, in3Pin, in4Pin
   
-  // 초기 상태 설정 (모터 정지)
-  analogWrite(enaPin, 0);
-  digitalWrite(in1Pin, LOW);
-  digitalWrite(in2Pin, LOW);
+  // // 초기 상태 설정 (모터 정지)
+  // analogWrite(enaPin, 0);
+  // digitalWrite(in1Pin, LOW);
+  // digitalWrite(in2Pin, LOW);
   
-  analogWrite(enbPin, 0);
-  digitalWrite(in3Pin, LOW);
-  digitalWrite(in4Pin, LOW);
+  // analogWrite(enbPin, 0);
+  // digitalWrite(in3Pin, LOW);
+  // digitalWrite(in4Pin, LOW);
+  
+  PORTD &= ~(1 << PD6); // enaPin LOW
+  PORTD &= ~(1 << PD5); // in1Pin LOW
+  PORTD &= ~(1 << PD4); // in2Pin LOW
+  
+  PORTB &= ~(1 << PB1); // enbPin LOW
+  PORTB &= ~(1 << PB0); // in3Pin LOW
+  PORTB &= ~(1 << PB3); // in4Pin LOW
+
+  // Timer 0 for PWM (enaPin, enbPin)
+  TCCR0A |= (1 << WGM00) | (1 << WGM01); // Fast PWM
+  TCCR0A |= (1 << COM0A1); // Clear OC0A on compare match (PB7/PD6)
+  TCCR0A |= (1 << COM0B1); // Clear OC0B on compare match (PD5)
+  TCCR0B |= (1 << CS00); // No prescaling
+
+  // Timer 2 for PWM (enaPin, enbPin)
+  TCCR2A |= (1 << WGM20) | (1 << WGM21); // Fast PWM
+  TCCR2A |= (1 << COM2A1); // Clear OC2A on compare match (PD3)
+  TCCR2A |= (1 << COM2B1); // Clear OC2B on compare match (PD3)
+  TCCR2B |= (1 << CS20); // No prescaling
 }
 
 void loop() {
@@ -46,22 +69,34 @@ void loop() {
     //블루투스로부터 들어오는 값을 시리얼모니터에 출력
     Serial.println(cmd); 
     if(cmd == 'a'){ // 가동
-      digitalWrite(in1Pin, HIGH);
-      digitalWrite(in2Pin, LOW);
-      analogWrite(enaPin, 255); // 모터 A 최대 속도
+      // digitalWrite(in1Pin, HIGH);
+      // digitalWrite(in2Pin, LOW);
+      // analogWrite(enaPin, 255); // 모터 A 최대 속도
+      PORTD |= (1 << PD5); // in1Pin HIGH
+      PORTD &= ~(1 << PD4); // in2Pin LOW
+      OCR0A = 255;
   
-      digitalWrite(in3Pin, HIGH);
-      digitalWrite(in4Pin, LOW);
-      analogWrite(enbPin, 255); // 모터 B 최대 속도
+      // digitalWrite(in3Pin, HIGH);
+      // digitalWrite(in4Pin, LOW);
+      // analogWrite(enbPin, 255); // 모터 B 최대 속도
+      PORTB |= (1 << PB0); // in3Pin HIGH
+      PORTB &= ~(1 << PB3); // in4Pin LOW
+      OCR0B = 255;
     }    
     else if(cmd == 'b'){ // 정지
-      analogWrite(enaPin, 0);
-      digitalWrite(in1Pin, LOW);
-      digitalWrite(in2Pin, LOW);
+      // analogWrite(enaPin, 0);
+      // digitalWrite(in1Pin, LOW);
+      // digitalWrite(in2Pin, LOW);
+      OCR0A = 0;
+      PORTD &= ~(1 << PD5); // in1Pin LOW
+      PORTD &= ~(1 << PD4); // in2Pin LOW
   
-      analogWrite(enbPin, 0);
-      digitalWrite(in3Pin, LOW);
-      digitalWrite(in4Pin, LOW);
+      // analogWrite(enbPin, 0);
+      // digitalWrite(in3Pin, LOW);
+      // digitalWrite(in4Pin, LOW);
+      OCR0B = 0;
+      PORTB &= ~(1 << PB0); // in3Pin LOW
+      PORTB &= ~(1 << PB3); // in4Pin LOW
     }
   }
 }
