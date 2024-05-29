@@ -15,8 +15,8 @@
 #include <Wire.h>
 #include "Adafruit_VL53L1X.h"
 
-#define IRQ_PIN 2     // Interrupt Request Pin
-#define XSHUT_PIN 3   // Shutdown Pin (센서를 제어하고 초기화하며, 여러 센서를 동시에 사용할 때 주소 충돌을 피하는 데 유용합)
+#define IRQ_PIN 2
+#define XSHUT_PIN 3
 
 // Pixy2 객체 생성
 Pixy2 pixy;
@@ -29,7 +29,9 @@ Adafruit_VL53L1X vl53 = Adafruit_VL53L1X(XSHUT_PIN, IRQ_PIN);
 void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);
+  /*
   Serial.println(F("Starting Pixy2 and VL53L1X sensor demo"));
+  */
 
   // Pixy2 초기화
   pixy.init();
@@ -37,6 +39,7 @@ void setup() {
 
   // VL53L1X 초기화
   Wire.begin();
+  /*
   if (!vl53.begin(0x29, &Wire)) {
     Serial.print(F("Error initializing VL53L1X: "));
     Serial.println(vl53.vl_status);
@@ -44,15 +47,15 @@ void setup() {
   }
   Serial.println(F("VL53L1X sensor initialized"));
 
-  // 거리 측정 시작이 안 되면 오류 문구 출력, 시작이 되면 시작 문구 출력
+  // 거리 측정 시작
   if (!vl53.startRanging()) {
     Serial.print(F("Couldn't start ranging: "));
     Serial.println(vl53.vl_status);
     while (1) delay(10);
   }
   Serial.println(F("Ranging started"));
-
-  // 타이밍 예산 설정 (거리 측정의 속도와 정확도 사이의 균형을 설정, 50ms동안 거리 측정 수행)
+  */
+  // 타이밍 예산 설정
   vl53.setTimingBudget(50);
   Serial.print(F("Timing budget (ms): "));
   Serial.println(vl53.getTimingBudget());
@@ -74,22 +77,20 @@ void loop() {
     panOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;
     tiltOffset = (int32_t)pixy.ccc.blocks[0].m_y - (int32_t)pixy.frameHeight / 2;
 
-    // PID 루프 업데이트 
+    // PID 루프 업데이트
     panLoop.update(panOffset);
     tiltLoop.update(tiltOffset);
 
-    // 서보 모터 제어 -> pixy2.1 화면의 중앙으로 배치하도록 함.
+    // 서보 모터 제어
     pixy.setServos(panLoop.m_command, tiltLoop.m_command);
 
     // VL53L1X 거리 측정
     if (vl53.dataReady()) {
       distance = vl53.distance();
-      // 거리 측정이 안 되는 경우
       if (distance == -1) {
         Serial.print(F("Couldn't get distance: "));
         Serial.println(vl53.vl_status);
       } 
-      // 거리 측정이 되면 mm 단위로 Serial 모니터에 출력
       else {
         Serial.print(F("Distance: "));
         Serial.print(distance);
