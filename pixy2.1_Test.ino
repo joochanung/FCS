@@ -34,7 +34,6 @@ void setup()
 
 void loop()
 {  
-  static int i = 0;
   int j;
   char buf[64]; 
   int32_t panOffset, tiltOffset;
@@ -44,11 +43,6 @@ void loop()
   
   if (pixy.ccc.numBlocks)
   {        
-    i++;
-    
-    if (i % 60 == 0)
-      Serial.println(i);   
-    
     // 첫 번째 객체(가장 큰 객체) 기준으로 팬과 틸트 "오류" 계산
     panOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;
     tiltOffset = (int32_t)pixy.ccc.blocks[0].m_y - (int32_t)pixy.frameHeight / 2;  
@@ -63,12 +57,6 @@ void loop()
     
     servoX.write(constrain(servoXPos, 0, 180)); // 서보 모터 범위 제한
     servoY.write(constrain(servoYPos, 0, 180)); // 서보 모터 범위 제한
-   
-#if 0 // 디버깅용
-    sprintf(buf, "%ld %ld %ld %ld", panLoop.m_command, tiltLoop.m_command, servoXPos, servoYPos);
-    Serial.println(buf);   
-#endif
-
   }  
   else // 객체가 인식되지 않으면 리셋 상태로 진입
   {
