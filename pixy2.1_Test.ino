@@ -9,51 +9,84 @@ PS: 서보 핀 9번으로 설정했는데, 사실은 pixy2.1에 직접 연결한
 이것은 pixy2.1만 테스트한 것으로 중간 발표용으로 써지 않아도 됨.
 */
 
-#include <SPI.h>
 #include <Pixy2.h>
+#include <PIDLoop.h>
 #include <Servo.h>
 
 Pixy2 pixy;
-Servo servo;
+PIDLoop panLoop(400, 0, 400, true);
+PIDLoop tiltLoop(500, 0, 500, true);
 
-int panPos = 90;  // 초기 서보 위치를 90도로 설정
-int servoPin = 9; // 서보 핀을 Arduino의 핀 9로 설정
+Servo servoX; // 서보 모터 X축
+Servo servoY; // 서보 모터 Y축
 
-void setup() {
+const int servoXPin = 9; // X축 서보 핀
+const int servoYPin = 10; // Y축 서보 핀
+
+void setup()
+{
+  Serial.begin(115200);
+  Serial.print("Starting...\n");
+ 
+  // Pixy2 초기화
   pixy.init();
-  servo.attach(servoPin);
-  servo.write(panPos);
+  
+  // Pixy2를 색상 연결된 구성 요소 프로그램으로 변경
+  pixy.changeProg("color_connected_components");
+  
+  // 서보 모터 초기화
+  servoX.attach(servoXPin);
+  servoY.attach(servoYPin);
+  
+  // 서보 초기 위치 설정 (중앙으로 설정)
+  servoX.write(90);
+  servoY.write(90);
 }
 
-void loop() {
-  // Pixy2.1이 블록을 감지하는지 확인
+void loop()
+{  
+  static int i = 0;
+  int j;
+  char buf[64]; 
+  int32_t panOffset, tiltOffset;
+  
+  // Pixy2에서 활성 블록 가져오기
   pixy.ccc.getBlocks();
   
-  if (pixy.ccc.numBlocks) {
-    // 첫 번째 블록의 중심 Y 좌표를 가져옴
-    int blockY = pixy.ccc.blocks[0].m_y;
-    int centerY = (pixy.frameHeight / 2);  // Pixy2.1의 화면 세로 중심
-
-    // 서보 위치를 제한 범위 내로 유지 (0도 ~ 180도)
-    panPos = constrain(panPos, 0, 180);
+  if (pixy.ccc.numBlocks)
+  {        
+    i++;
     
-    // 물체가 중앙에서 벗어나 있는 경우 중앙에 위치할 때까지 서보를 움직임
-    if (blockY < centerY - 10) {
-      while(blockY - centerY <=0){
-        panPos += 1; // 물체가 중앙보다 아래에 있으면 서보를 위로 이동
-        servo.write(panPos);
-        delay(10);
-      }
-    } 
-    else if (blockY > centerY + 10) {
-      while(blockY - centerY >= 0){
-        panPos -= 1; // 물체가 중앙보다 위에 있으면 서보를 아래로 이동
-        servo.write(panPos);
-        delay(10);
-      }
-    }
-    delay(10);
-  }
+    if (i % 60 == 0)
+      Serial.println(i);   
+    
+    // 첫 번째 객체(가장 큰 객체) 기준으로 팬과 틸트 "오류" 계산
+    panOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;
+    tiltOffset = (int32_t)pixy.ccc.blocks[0].m_y - (int32_t)pixy.frameHeight / 2;  
   
-  delay(20); // 서보 모터의 이동 시간을 위해 딜레이 추가
+    // PID 루프 업데이트
+    panLoop.update(panOffset);
+    tiltLoop.update(tiltOffset);
+
+    // 서보 모터 위치 설정
+    int servoXPos = 90 + panLoop.m_command / 4; // PID 출력 값을 서보 모터 위치로 변환
+    int servoYPos = 90 + tiltLoop.m_command / 4; // PID 출력 값을 서보 모터 위치로 변환
+    
+    servoX.write(constrain(servoXPos, 0, 180)); // 서보 모터 범위 제한
+    servoY.write(constrain(servoYPos, 0, 180)); // 서보 모터 범위 제한
+   
+#if 0 // 디버깅용
+    sprintf(buf, "%ld %ld %ld %ld", panLoop.m_command, tiltLoop.m_command, servoXPos, servoYPos);
+    Serial.println(buf);   
+#endif
+
+  }  
+  else // 객체가 인식되지 않으면 리셋 상태로 진입
+  {
+    panLoop.reset();
+    tiltLoop.reset();
+    servoX.write(90); // 초기 위치로 설정
+    servoY.write(90); // 초기 위치로 설정
+  }
 }
+
