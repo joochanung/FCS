@@ -40,7 +40,8 @@ void setup()
 
 void loop()
 {  
-  int32_t panOffset, tiltOffset;
+  int32_t panOffset, tiltOffset, newPanOffset;
+  int32_t oldPanOffset = -1;
 
   // Pixy에서 블록 데이터 가져오기
   pixy.ccc.getBlocks();
@@ -48,10 +49,14 @@ void loop()
   if (pixy.ccc.numBlocks)
   {        
     // 팬 및 틸트 오프셋 계산
-    panOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;
-    if(newPanOffset >= panOffset/2){
+    newPanOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;
+
+    if(newPanOffset > oldPanOffset/2){
+      panOffset = newPanOffset;
+    } else if(oldPanOffset == -1) {
       panOffset = newPanOffset;
     }
+    oldPanOffset = panOffset;
     tiltOffset = (int32_t)pixy.ccc.blocks[0].m_y - (int32_t)pixy.frameHeight / 2;  
 
     // PID 루프 업데이트
