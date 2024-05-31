@@ -3,67 +3,63 @@
 #include <Servo.h>
 
 Pixy2 pixy;
-PIDLoop panLoop(400, 0, 400, true);
-PIDLoop tiltLoop(500, 0, 500, true);
+PIDLoop panLoop(300, 0, 400, true);  // 조정된 PID 파라미터
+PIDLoop tiltLoop(300, 0, 400, true); // 조정된 PID 파라미터
 
-Servo servoX; // 서보 모터 X축
-Servo servoY; // 서보 모터 Y축
-
-const int servoXPin = 9; // X축 서보 핀
-const int servoYPin = 10; // Y축 서보 핀
+Servo panServo;
+Servo tiltServo;
 
 void setup()
 {
   Serial.begin(115200);
   Serial.print("Starting...\n");
- 
-  // Pixy2 초기화
+
+  // We need to initialize the pixy object 
   pixy.init();
-  
-  // Pixy2를 색상 연결된 구성 요소 프로그램으로 변경
+  // Use color connected components program for the pan tilt to track 
   pixy.changeProg("color_connected_components");
-  
-  // 서보 모터 초기화
-  servoX.attach(servoXPin);
-  servoY.attach(servoYPin);
-  
-  // 서보 초기 위치 설정 (중앙으로 설정)
-  servoX.write(90);
-  servoY.write(90);
+
+  // Attach servos to pins
+  panServo.attach(5);
+  tiltServo.attach(6);
+  panServo.write(0);  // Center position (중앙으로 초기화)
+  tiltServo.write(180); // Center position (중앙으로 초기화)
 }
 
 void loop()
 {  
-  int j;
-  char buf[64]; 
   int32_t panOffset, tiltOffset;
-  
-  // Pixy2에서 활성 블록 가져오기
+
+  // get active blocks from Pixy
   pixy.ccc.getBlocks();
-  
+
   if (pixy.ccc.numBlocks)
   {        
-    // 첫 번째 객체(가장 큰 객체) 기준으로 팬과 틸트 "오류" 계산
+    // calculate pan and tilt "errors" with respect to first object (blocks[0]), 
+    // which is the biggest object (they are sorted by size).  
     panOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;
     tiltOffset = (int32_t)pixy.ccc.blocks[0].m_y - (int32_t)pixy.frameHeight / 2;  
-  
-    // PID 루프 업데이트
+
+    // update loops
     panLoop.update(panOffset);
     tiltLoop.update(tiltOffset);
 
-    // 서보 모터 위치 설정
-    int servoXPos = 90 + panLoop.m_command / 4; // PID 출력 값을 서보 모터 위치로 변환
-    int servoYPos = 90 + tiltLoop.m_command / 4; // PID 출력 값을 서보 모터 위치로 변환
-    
-    servoX.write(constrain(servoXPos, 0, 180)); // 서보 모터 범위 제한
-    servoY.write(constrain(servoYPos, 0, 180)); // 서보 모터 범위 제한
-  }  
-  else // 객체가 인식되지 않으면 리셋 상태로 진입
-  {
-    panLoop.reset();
-    tiltLoop.reset();
-    servoX.write(90); // 초기 위치로 설정
-    servoY.write(90); // 초기 위치로 설정
+    // get pan and tilt command from PID loops
+    int panCommand = panLoop.m_command;
+    int tiltCommand = tiltLoop.m_command;
+
+    // limit the command values to the expected range
+    panCommand = constrain(panCommand, -400, 400);
+    tiltCommand = constrain(tiltCommand, -400, 400);
+
+    // map the command values to servo angle range
+    int panAngle = map(panCommand, -400, 400, -180, 180);
+    int tiltAngle = map(tiltCommand, -400, 400, 0, 180);
+
+    // set pan and tilt servos  
+    panServo.write(constrain(panAngle, -180, 180)); // 각도를 제한하여 서보의 물리적 한계 내에서 움직이게 함
+    tiltServo.write(constrain(tiltAngle, 0, 180)); // 각도를 제한하여 서보의 물리적 한계 내에서 움직이게 함
+  }
+  else{
   }
 }
-
