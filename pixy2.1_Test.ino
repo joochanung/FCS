@@ -1,3 +1,5 @@
+// 라이브러리를 이용한 pixy2.1 물체 추적 코드
+
 #include <Pixy2.h>
 #include <PIDLoop.h>
 #include <Servo.h>
