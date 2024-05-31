@@ -1,3 +1,5 @@
+// pixy2.1 물체 추적 코드에서 라이브러리 최대한 없는 방향으로 진행
+
 #include <Pixy2.h>
 #include <PIDLoop.h>
 
