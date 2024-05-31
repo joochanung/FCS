@@ -6,9 +6,6 @@ PIDLoop panLoop(150, 0, 600, true);  // 조정된 PID 파라미터
 PIDLoop tiltLoop(300, 0, 400, true); // 조정된 PID 파라미터
 
 // 서보 모터 제어용 상수
-#define SERVO_MIN_PULSE_WIDTH 544     // 서보 모터 최소 펄스 길이
-#define SERVO_MAX_PULSE_WIDTH 2400    // 서보 모터 최대 펄스 길이
-#define SERVO_CENTER_PULSE_WIDTH 1500 // 서보 모터 중앙 펄스 길이
 #define SERVO_REFRESH_INTERVAL 20000  // 서보 모터 리프레시 주기 (마이크로초)
 
 // 서보 모터 핀 정의
@@ -29,13 +26,13 @@ void setup()
   pinMode(tiltServoPin, OUTPUT);
   
   // Timer1 설정 (서보 모터 제어용 PWM 생성)
-  TCCR1A = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B1); // Fast PWM, non-inverted
-  TCCR1B = _BV(WGM13) | _BV(WGM12) | _BV(CS11);   // Prescaler 8
+  TCCR1A = (1 << WGM11) | (1 << COM1A1) | (1 << COM1B1); // Fast PWM, non-inverted
+  TCCR1B = (1 << WGM13) | (1 << WGM12) | (1 << CS11);   // Prescaler 8
   ICR1 = SERVO_REFRESH_INTERVAL;  // TOP 값 설정 (20ms 주기)
   
   // 초기 위치 설정 (팬: 0도, 틸트: 180도)
-  int panInitialPulseWidth = map(0, 0, 180, SERVO_MIN_PULSE_WIDTH, SERVO_MAX_PULSE_WIDTH);
-  int tiltInitialPulseWidth = map(180, 0, 180, SERVO_MIN_PULSE_WIDTH, SERVO_MAX_PULSE_WIDTH);
+  int panInitialPulseWidth = map(0, 0, 180, -3000, 5000);
+  int tiltInitialPulseWidth = map(180, 0, 180, 544, 2400);
 
   OCR1A = panInitialPulseWidth; // 팬 서보 모터 초기화 (0도 위치)
   OCR1B = tiltInitialPulseWidth; // 틸트 서보 모터 초기화 (180도 위치)
@@ -67,14 +64,27 @@ void loop()
     tiltCommand = constrain(tiltCommand, -400, 400);
 
     // 명령 값을 서보 모터 펄스 길이로 매핑
-    int panPulseWidth = map(panCommand, -400, 400, SERVO_MIN_PULSE_WIDTH, SERVO_MAX_PULSE_WIDTH);
-    int tiltPulseWidth = map(tiltCommand, -400, 400, SERVO_MIN_PULSE_WIDTH, SERVO_MAX_PULSE_WIDTH);
+    int panPulseWidth = map(panCommand, -400, 400, -3000, 5000);
+    int tiltPulseWidth = map(tiltCommand, -400, 400, 544, 2400);
 
     // 서보 모터 제어
-    OCR1A = constrain(panPulseWidth, SERVO_MIN_PULSE_WIDTH, SERVO_MAX_PULSE_WIDTH);
-    OCR1B = constrain(tiltPulseWidth, SERVO_MIN_PULSE_WIDTH, SERVO_MAX_PULSE_WIDTH);
+    OCR1A = constrain(panPulseWidth, -3000, 5000);
+    OCR1B = constrain(tiltPulseWidth, 544, 2400);
 
-    Serial.print("Pan_PulseWidth: ");
-    Serial.println(panPulseWidth);
+    // 팬 서보 모터의 각도 계산
+    int panAngle = calculateAngle(panPulseWidth, -3000, 5000, -180, 180);
+
+    // 틸트 서보 모터의 각도 계산
+    int tiltAngle = calculateAngle(tiltPulseWidth, 544, 2400, 0, 180);
+
+    Serial.print("Pan Angle: ");
+    Serial.println(panAngle);
+    Serial.print("Tilt Angle: ");
+    Serial.println(tiltAngle);
   }
+}
+
+int calculateAngle(int pulseWidth, int minPulseWidth, int maxPulseWidth, int minAngle, int maxAngle) {
+  // 펄스 폭을 각도로 변환
+  return map(pulseWidth, minPulseWidth, maxPulseWidth, minAngle, maxAngle);
 }
