@@ -1,4 +1,5 @@
 // pixy2.1 물체 추적 코드에서 라이브러리 최대한 없는 방향으로 진행
+// 핀이 현재 9, 10번을 설정되어 있는데, 5, 6번(OC0B, OC0A)로 변경 바람
 
 #include <Pixy2.h>
 #include <PIDLoop.h>
