@@ -49,6 +49,9 @@ void loop()
   {        
     // 팬 및 틸트 오프셋 계산
     panOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;
+    if(newPanOffset >= panOffset/2){
+      panOffset = newPanOffset;
+    }
     tiltOffset = (int32_t)pixy.ccc.blocks[0].m_y - (int32_t)pixy.frameHeight / 2;  
 
     // PID 루프 업데이트
