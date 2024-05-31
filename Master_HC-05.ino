@@ -1,49 +1,90 @@
-#include<SoftwareSerial.h> 
+#include <SoftwareSerial.h> 
 #include <SPI.h>
 
-SoftwareSerial btserial(3,2);
+#define BTRXD 2;
+#define BTTXD 3;
+#define IN2 4;
+#define IN1 5;
+#define ENA 6;
+#define IN3 7;
+#define IN4 8;
+#define ENB 9;
+#define SS 10;
+#define MOSI 11;
+#define MISO 12;
+#define SCK 13;
+
+#define FOSC 1843200
+#define BAUD 9600
+#define MYUBRR FOSC/16/BAUD - 1
+
+SoftwareSerial btserial(BTTXD, BTRXD);
 //(아두이노의 RX는 블루투스의 TX에, 아두이노의 TX는 블루투스의 RX에 연결
 
-const int slaveSelectPin = 10;
+int status = 0;
 
 uint8_t transfer_SPI(uint8_t data){
   // Activate slave
-  PORTB &= ~(1 << SS);
+  PORTB &= ~(1 << PB2);
 
   SPDR = data;
   while (!(SPSR & (1 << SPIF)));
 
   // Deactivate slave
-  PORTB |= (1 << SS);
+  PORTB |= (1 << PB2);
 
   return SPDR;
 }
 
-void init_Serial(){
+void USART_init(unsigned int ubrr){
+  ubrr = FOSC/16/BAUD - 1;
+
+  // Set baud rate
+  UBRR0H = (unsigned char)(ubrr >> 8);
+  UBRR0L = (unsigned char)ubrr;
+
+  // Enable receiver and transmitter
+  UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+
+  // Set frame format: 8 bit data, 2 stop bit
+  UCSR0C = (1 << USBS0) | (3 << UCSZ00);
+}
+
+void USART_transmit(unsigned char data){
+  while(!(UCSR0A & (1 << UDRE0)));
+  UDR0 = data;
+}
+
+unsigned char USART_receive(void){
+  //문자 형식의 cmd라는 변수를 생성하고 블루투스로부터 들어오는 값을 저장
+  while (!(UCSR0A & (1 << RXC0))); 
+  char cmd = UDR0;
+  //블루투스로부터 들어오는 값을 시리얼모니터에 출력
+  Serial.println(cmd); 
+  return cmd - '0';
+}
+
+void Serial_init(){
   // pinMode(slaveSelectPin, OUTPUT);
   DDRB |= (1 << DDB2);
-  // servo.attach(9);
-  DDRB |= (1 << DDB1);
   // digitalWrite(slaveSelectPin, HIGH);
-  PORTB |= (1 << SS); // SS를 비활성화 상태로 시작
+  PORTB |= (1 << PB2); // SS를 비활성화 상태로 시작
   // SPI.begin();
   SPCR |= (1 << SPE) | (1 << MSTR) | (0 << SPR1) | (1 << SPR0);
-  Serial.begin(9600);
-  btserial.begin(9600);
   // servo.write(0);
 }
+
 void setup() {
-  init_Serial();
+  btserial.begin(9600);
+  // Serial.begin(9600);
+  Serial_init();
+  USART_init(MYUBRR);
 }
 
 void loop() {
   //만약 블루투스가 통신가능한 상태라면 아래 코드들을 실행, 아니라면 아무것도 하지 않음
-  if(btserial.available()){     
-    //문자 형식의 cmd라는 변수를 생성하고 블루투스로부터 들어오는 값을 저장
-    char cmd = (char)btserial.read();
-    int status = cmd - '0';
-    //블루투스로부터 들어오는 값을 시리얼모니터에 출력
-    Serial.println(cmd); 
+  if(UCSR0A & (1 << RXC0)){  // btserial   
+    status = USART_receive();
     if(status == 1){ 
       sendDataToSlave(status);
     }    
