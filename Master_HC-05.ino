@@ -4,8 +4,8 @@
 
 #include <SoftwareSerial.h>
 
-#define BTRXD 2
-#define BTTXD 3
+#define BTRXD A2
+#define BTTXD A3
 
 SoftwareSerial btserial(BTTXD, BTRXD); // Arduino RX connected to Bluetooth TX, Arduino TX connected to Bluetooth RX
 
@@ -52,9 +52,9 @@ void loop() {
     char cmd = (char)btserial.read(); // Read the data and convert it from char to int
     int status = cmd - '0';
     Serial.println(status); // Print received data to the Serial Monitor
-    if (status == 1) {
+    if (status == 1) { // 전진
       sendDataToSlave(status);
-      /*
+      
       // 모터 A 제어 (in1Pin = LOW, in2Pin = HIGH, enaPin = 255)
       PORTB &= ~(1 << PB0); // in1Pin = LOW
       PORTD |= (1 << PD7);  // in2Pin = HIGH
@@ -64,12 +64,29 @@ void loop() {
       PORTD |= (1 << PD5);  // in3Pin = HIGH
       PORTD &= ~(1 << PD4); // in4Pin = LOW
       OCR0A = 255;          // enbPin = 255 (최대 속도)
-      */
-
     }
-    else if(status == 2){
+    else if(status == 2){ // 기동간 사격
       sendDataToSlave(status);
-      /*
+      // 피에조 부저 활성화
+      // 레이저 모듈 활성화
+    }
+    else if(status == 3){ // 안전 모드
+      sendDataToSlave(status);
+      // 피에조 부저 비활성화
+      // 레이저 모듈 비활성화
+      
+      // 모터 A 제어 (in1Pin = LOW, in2Pin = HIGH, enaPin = 255)
+      PORTB &= ~(1 << PB0); // in1Pin = LOW
+      PORTD |= (1 << PD7);  // in2Pin = HIGH
+      OCR1A = 511;          // enaPin = 255 (최대 속도)
+
+      // 모터 B 제어 (in3Pin = HIGH, in4Pin = LOW, enbPin = 255)
+      PORTD |= (1 << PD5);  // in3Pin = HIGH
+      PORTD &= ~(1 << PD4); // in4Pin = LOW
+      OCR0A = 255;          // enbPin = 255 (최대 속도)
+    }
+    else if(status == 4){ // 정지
+      sendDataToSlave(status);
       // 모터 A 제어 (in1Pin = LOW, in2Pin = HIGH, enaPin = 255)
       PORTB &= ~(1 << PB0); // in1Pin = LOW
       PORTD &= ~(1 << PD7);  // in2Pin = HIGH
@@ -79,13 +96,6 @@ void loop() {
       PORTD &= ~(1 << PD5);  // in3Pin = HIGH
       PORTD &= ~(1 << PD4); // in4Pin = LOW
       OCR0A = 0;          // enbPin = 255 (최대 속도)
-      */
-    }
-    else if(status == 3){
-      sendDataToSlave(status);
-    }
-    else if(status == 4){
-      sendDataToSlave(status);
     }
   }
 }
