@@ -1,7 +1,3 @@
-// pixy2.1 물체 추적 코드에서 라이브러리 최대한 없는 방향으로 진행
-// 핀이 현재 9, 10번을 설정되어 있는데, 5, 6번(OC0B, OC0A)로 변경 바람
-// 각도 출력도 정확하지 않아 지금 당장은 이것을 쓰면 안 됨.
-
 #include <Pixy2.h>
 #include <PIDLoop.h>
 
@@ -15,6 +11,7 @@ PIDLoop tiltLoop(300, 0, 400, true); // 조정된 PID 파라미터
 // 서보 모터 핀 정의
 const int panServoPin = 9;  // Timer1을 사용하기 위해 9번 핀 사용
 const int tiltServoPin = 10; // Timer1을 사용하기 위해 10번 핀 사용
+int32_t oldPanOffset = -1;
 
 void setup()
 {
@@ -45,7 +42,6 @@ void setup()
 void loop()
 {  
   int32_t panOffset, tiltOffset, newPanOffset;
-  int32_t oldPanOffset = -1;
 
   // Pixy에서 블록 데이터 가져오기
   pixy.ccc.getBlocks();
@@ -55,10 +51,19 @@ void loop()
     // 팬 및 틸트 오프셋 계산
     newPanOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;
 
-    if(newPanOffset > oldPanOffset/2){
+    int objectWidth = pixy.ccc.blocks[0].m_width;
+    int objectHeight = pixy.ccc.blocks[0].m_height;
+    int objectSize = objectWidth * objectHeight;
+
+    // 물체 크기에 따라 오프셋 최신화 범위 설정 (클수록 범위를 넓게, 작을수록 좁게)
+    float updateThreshold = map(objectSize, 0, pixy.frameWidth * pixy.frameHeight, 0.1, 0.9);
+
+    if(newPanOffset > updateThreshold * oldPanOffset){
       panOffset = newPanOffset;
     } else if(oldPanOffset == -1) {
       panOffset = newPanOffset;
+    } else {
+      panOffset = oldPanOffset;
     }
     oldPanOffset = panOffset;
     tiltOffset = (int32_t)pixy.ccc.blocks[0].m_y - (int32_t)pixy.frameHeight / 2;  
