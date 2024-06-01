@@ -1,102 +1,96 @@
 // 코드를 하나로 합치는 과정에서 반드시 필요한 코드 (아두이노 - 스마트폰 간의 통신 과정)
 // HC-05가 잘 작동하는지 확인하기 위해 사용한 코드. 그 뿐만 아니라 스마트폰와의 연결, 스마트폰에서의 입력과 아두이노에서의 출력 결과가 잘 이루어져 있는지 확인하는 과정.
+// 1를 입력하면 전진, 2를 입력하면 정지
 
-#include<SoftwareSerial.h> 
+#include <SoftwareSerial.h>
+#include <SPI.h>
 
-SoftwareSerial btserial(3,2);
-//(아두이노의 RX는 블루투스의 TX에, 아두이노의 TX는 블루투스의 RX에 연결
+#define BTRXD 2
+#define BTTXD 3
 
-// 핀 정의
-const int enaPin = 6; // 모터 A 속도 제어 핀 (PWM)
-const int in1Pin = 5; // 모터 A 방향 제어 핀 1
-const int in2Pin = 4;  // 모터 A 방향 제어 핀 2
+SoftwareSerial btserial(BTTXD, BTRXD); // Arduino RX connected to Bluetooth TX, Arduino TX connected to Bluetooth RX
 
-const int in3Pin = 7;  // 모터 B 방향 제어 핀 1
-const int in4Pin = 8;  // 모터 B 방향 제어 핀 2
-const int enbPin = 9;  // 모터 B 속도 제어 핀 (PWM)
+const int slaveSelectPin = 10;
 
 void setup() {
-  btserial.begin(9600); //아두이노와 블루투스끼리의 통신속도를 9600으로 지정
-  Serial.begin(9600); //아두이노와 컴퓨터와의 통신속도도 9600으로 지정
+  pinMode(slaveSelectPin, OUTPUT);
+  digitalWrite(slaveSelectPin, HIGH);
+  SPI.begin();
+  btserial.begin(9600);
+  Serial.begin(9600);
 
-  // // 핀 모드 설정
-  // pinMode(enaPin, OUTPUT);
-  // pinMode(in1Pin, OUTPUT);
-  // pinMode(in2Pin, OUTPUT);
-  
-  // pinMode(enbPin, OUTPUT);
-  // pinMode(in3Pin, OUTPUT);
-  // pinMode(in4Pin, OUTPUT);
+  // 핀을 출력 모드로 설정
+  DDRB |= (1 << DDB1) | (1 << DDB0); // enaPin (PB1), in1Pin (PB0)
+  DDRD |= (1 << DDD7) | (1 << DDD6) | (1 << DDD5) | (1 << DDD4); // in2Pin (PD7), enbPin (PD6), in3Pin (PD5), in4Pin (PD4)
 
-  DDRD |= (1 << PD6) | (1 << PD5) | (1 << PD4); // enaPin, in1Pin, in2Pin
-  DDRB |= (1 << PB1) | (1 << PB0) | (1 << PB3); // enbPin, in3Pin, in4Pin
-  
-  // // 초기 상태 설정 (모터 정지)
-  // analogWrite(enaPin, 0);
-  // digitalWrite(in1Pin, LOW);
-  // digitalWrite(in2Pin, LOW);
-  
-  // analogWrite(enbPin, 0);
-  // digitalWrite(in3Pin, LOW);
-  // digitalWrite(in4Pin, LOW);
-  
-  PORTD &= ~(1 << PD6); // enaPin LOW
-  PORTD &= ~(1 << PD5); // in1Pin LOW
-  PORTD &= ~(1 << PD4); // in2Pin LOW
-  
-  PORTB &= ~(1 << PB1); // enbPin LOW
-  PORTB &= ~(1 << PB0); // in3Pin LOW
-  PORTB &= ~(1 << PB3); // in4Pin LOW
+  // 초기 값 설정
+  OCR1A = 0; // enaPin (PB1) PWM 초기값 0
+  OCR0A = 0; // enbPin (PD6) PWM 초기값 0
+  PORTB &= ~(1 << PB0); // in1Pin = LOW
+  PORTD &= ~(1 << PD7); // in2Pin = LOW
+  PORTD &= ~(1 << PD5); // in3Pin = LOW
+  PORTD &= ~(1 << PD4); // in4Pin = LOW
 
-  // Timer 0 for PWM (enaPin, enbPin)
-  TCCR0A |= (1 << WGM00) | (1 << WGM01); // Fast PWM
-  TCCR0A |= (1 << COM0A1); // Clear OC0A on compare match (PB7/PD6)
-  TCCR0A |= (1 << COM0B1); // Clear OC0B on compare match (PD5)
-  TCCR0B |= (1 << CS00); // No prescaling
+  // PWM 설정
+  // Timer 1 설정 (PB1)
+  TCCR1A |= (1 << COM1A1); // 비반전 모드
+  TCCR1A |= (1 << WGM11) | (1 << WGM10); // Fast PWM, 8비트
+  TCCR1B |= (1 << WGM12) | (1 << CS11); // 분주비 8
 
-  // Timer 2 for PWM (enaPin, enbPin)
-  TCCR2A |= (1 << WGM20) | (1 << WGM21); // Fast PWM
-  TCCR2A |= (1 << COM2A1); // Clear OC2A on compare match (PD3)
-  TCCR2A |= (1 << COM2B1); // Clear OC2B on compare match (PD3)
-  TCCR2B |= (1 << CS20); // No prescaling
+  // Timer 0 설정 (PD6)
+  TCCR0A |= (1 << COM0A1); // 비반전 모드
+  TCCR0A |= (1 << WGM01) | (1 << WGM00); // Fast PWM, 8비트
+  TCCR0B |= (1 << CS01); // 분주비 8
 }
 
 void loop() {
-  //만약 블루투스가 통신가능한 상태라면 아래 코드들을 실행, 아니라면 아무것도 하지 않음
-  if(btserial.available()){     
-    //문자 형식의 cmd라는 변수를 생성하고 블루투스로부터 들어오는 값을 저장
-    char cmd = (char)btserial.read(); 
-    //블루투스로부터 들어오는 값을 시리얼모니터에 출력
-    Serial.println(cmd); 
-    if(cmd == 'a'){ // 가동
-      // digitalWrite(in1Pin, HIGH);
-      // digitalWrite(in2Pin, LOW);
-      // analogWrite(enaPin, 255); // 모터 A 최대 속도
-      PORTD |= (1 << PD5); // in1Pin HIGH
-      PORTD &= ~(1 << PD4); // in2Pin LOW
-      OCR0A = 255;
-  
-      // digitalWrite(in3Pin, HIGH);
-      // digitalWrite(in4Pin, LOW);
-      // analogWrite(enbPin, 255); // 모터 B 최대 속도
-      PORTB |= (1 << PB0); // in3Pin HIGH
-      PORTB &= ~(1 << PB3); // in4Pin LOW
-      OCR0B = 255;
-    }    
-    else if(cmd == 'b'){ // 정지
-      // analogWrite(enaPin, 0);
-      // digitalWrite(in1Pin, LOW);
-      // digitalWrite(in2Pin, LOW);
-      OCR0A = 0;
-      PORTD &= ~(1 << PD5); // in1Pin LOW
-      PORTD &= ~(1 << PD4); // in2Pin LOW
-  
-      // analogWrite(enbPin, 0);
-      // digitalWrite(in3Pin, LOW);
-      // digitalWrite(in4Pin, LOW);
-      OCR0B = 0;
-      PORTB &= ~(1 << PB0); // in3Pin LOW
-      PORTB &= ~(1 << PB3); // in4Pin LOW
+  if (btserial.available()) { // Check if there is any data available from Bluetooth
+    char cmd = (char)btserial.read(); // Read the data and convert it from char to int
+    int status = cmd - '0';
+    Serial.println(status); // Print received data to the Serial Monitor
+    if (status == 1) {
+      sendDataToSlave(status);
+      // 모터 A 제어 (in1Pin = LOW, in2Pin = HIGH, enaPin = 255)
+      PORTB &= ~(1 << PB0); // in1Pin = LOW
+      PORTD |= (1 << PD7);  // in2Pin = HIGH
+      OCR1A = 511;          // enaPin = 255 (최대 속도)
+
+      // 모터 B 제어 (in3Pin = HIGH, in4Pin = LOW, enbPin = 255)
+      PORTD |= (1 << PD5);  // in3Pin = HIGH
+      PORTD &= ~(1 << PD4); // in4Pin = LOW
+      OCR0A = 255;          // enbPin = 255 (최대 속도)
+    }
+    else if(status == 2){
+      sendDataToSlave(status);
+      // 모터 A 제어 (in1Pin = LOW, in2Pin = HIGH, enaPin = 255)
+      PORTB &= ~(1 << PB0); // in1Pin = LOW
+      PORTD &= ~(1 << PD7);  // in2Pin = HIGH
+      OCR1A = 0;          // enaPin = 255 (최대 속도)
+
+      // 모터 B 제어 (in3Pin = HIGH, in4Pin = LOW, enbPin = 255)
+      PORTD &= ~(1 << PD5);  // in3Pin = HIGH
+      PORTD &= ~(1 << PD4); // in4Pin = LOW
+      OCR0A = 0;          // enbPin = 255 (최대 속도)
+    }
+    else if(status == 3){
+      sendDataToSlave(status);
     }
   }
 }
+
+void sendDataToSlave(int data) {
+  byte highByte = (data >> 8) & 0xFF; // Upper 8 bits
+  byte lowByte = data & 0xFF;         // Lower 8 bits
+
+  // Select slave
+  digitalWrite(slaveSelectPin, LOW);
+  // Transfer high and low bytes
+  SPI.transfer(highByte);
+  SPI.transfer(lowByte);
+  // Deselect slave
+  digitalWrite(slaveSelectPin, HIGH);
+
+  Serial.print("Sent data: ");
+  Serial.println(data);
+}
+
