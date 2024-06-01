@@ -1,5 +1,3 @@
-#include <SPI.h>
-
 volatile bool newDataReceived = false;
 volatile int receivedData = 0;
 
@@ -16,6 +14,19 @@ void loop() {
     Serial.print("Received data: ");
     Serial.println(receivedData);
     newDataReceived = false;  // 플래그 초기화
+  }
+  int status = receivedData;
+  if(status == 1){
+    Serial.println("Hello 1");
+  }
+  else if(status == 2){
+    Serial.println("Hello 2");
+  }
+  else if(status == 3){
+    Serial.println("Hello 3");
+  }
+  else if(status == 4){
+    Serial.println("Hello 4");
   }
 }
 
