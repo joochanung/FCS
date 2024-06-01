@@ -1,9 +1,8 @@
 // 코드를 하나로 합치는 과정에서 반드시 필요한 코드 (아두이노 - 스마트폰 간의 통신 과정)
 // HC-05가 잘 작동하는지 확인하기 위해 사용한 코드. 그 뿐만 아니라 스마트폰와의 연결, 스마트폰에서의 입력과 아두이노에서의 출력 결과가 잘 이루어져 있는지 확인하는 과정.
-// 1를 입력하면 전진, 2를 입력하면 정지
+// 1를 입력하면 전진, 2를 입력하면 정지 & SPI와 모터에 대한 라이브러리를 이용하지 않고 코드를 구현함.
 
 #include <SoftwareSerial.h>
-#include <SPI.h>
 
 #define BTRXD 2
 #define BTTXD 3
@@ -13,9 +12,14 @@ SoftwareSerial btserial(BTTXD, BTRXD); // Arduino RX connected to Bluetooth TX, 
 const int slaveSelectPin = 10;
 
 void setup() {
-  pinMode(slaveSelectPin, OUTPUT);
-  digitalWrite(slaveSelectPin, HIGH);
-  SPI.begin();
+  // SPI 설정
+  // SS, MOSI, SCK 핀을 출력 모드로 설정
+  DDRB |= (1 << DDB2) | (1 << DDB3) | (1 << DDB5);
+
+  // SPI 설정
+  SPCR |= (1 << SPE) | (1 << MSTR) | (1 << SPR0); // SPI 활성화, 마스터 모드, F_CPU/16 속도
+
+  PORTB |= (1 << DDB2);
   btserial.begin(9600);
   Serial.begin(9600);
 
@@ -50,6 +54,7 @@ void loop() {
     Serial.println(status); // Print received data to the Serial Monitor
     if (status == 1) {
       sendDataToSlave(status);
+      /*
       // 모터 A 제어 (in1Pin = LOW, in2Pin = HIGH, enaPin = 255)
       PORTB &= ~(1 << PB0); // in1Pin = LOW
       PORTD |= (1 << PD7);  // in2Pin = HIGH
@@ -59,9 +64,12 @@ void loop() {
       PORTD |= (1 << PD5);  // in3Pin = HIGH
       PORTD &= ~(1 << PD4); // in4Pin = LOW
       OCR0A = 255;          // enbPin = 255 (최대 속도)
+      */
+
     }
     else if(status == 2){
       sendDataToSlave(status);
+      /*
       // 모터 A 제어 (in1Pin = LOW, in2Pin = HIGH, enaPin = 255)
       PORTB &= ~(1 << PB0); // in1Pin = LOW
       PORTD &= ~(1 << PD7);  // in2Pin = HIGH
@@ -71,8 +79,12 @@ void loop() {
       PORTD &= ~(1 << PD5);  // in3Pin = HIGH
       PORTD &= ~(1 << PD4); // in4Pin = LOW
       OCR0A = 0;          // enbPin = 255 (최대 속도)
+      */
     }
     else if(status == 3){
+      sendDataToSlave(status);
+    }
+    else if(status == 4){
       sendDataToSlave(status);
     }
   }
@@ -83,14 +95,17 @@ void sendDataToSlave(int data) {
   byte lowByte = data & 0xFF;         // Lower 8 bits
 
   // Select slave
-  digitalWrite(slaveSelectPin, LOW);
+  PORTB &= ~(1 << DDB2);
+
   // Transfer high and low bytes
-  SPI.transfer(highByte);
-  SPI.transfer(lowByte);
+  SPDR = highByte;
+  while (!(SPSR & (1 << SPIF))) ; // Wait for transmission complete
+  SPDR = lowByte;
+  while (!(SPSR & (1 << SPIF))) ; // Wait for transmission complete
+  
   // Deselect slave
-  digitalWrite(slaveSelectPin, HIGH);
+  PORTB |= (1 << DDB2);
 
   Serial.print("Sent data: ");
   Serial.println(data);
 }
-
