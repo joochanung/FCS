@@ -16,17 +16,19 @@ void loop() {
     newDataReceived = false;  // 플래그 초기화
   }
   int status = receivedData;
-  if(status == 1){
-    Serial.println("Hello 1");
+  if(status == 1){ // 전진
+    // pixy2 활성화
   }
-  else if(status == 2){
-    Serial.println("Hello 2");
+  else if(status == 2){ // 기동간 사격
+    // pixy2 활성화 및 추적 시작
+    // 레이져 모듈의 서보 모터 추적
   }
-  else if(status == 3){
-    Serial.println("Hello 3");
+  else if(status == 3){ // 안전 모드
+    // pixy2 활성화
+    // 레이져 모듈의 서보 모터 추적 중지
   }
-  else if(status == 4){
-    Serial.println("Hello 4");
+  else if(status == 4){ // 정지
+    // 모든 장치 비활성화
   }
 }
 
