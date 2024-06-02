@@ -66,13 +66,13 @@ void loop()
     int32_t newPanOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;    // get new pan offset
     tiltOffset = (int32_t)pixy.ccc.blocks[0].m_y - (int32_t)pixy.frameHeight / 2;
 
-    // PID 루프 업데이트
-    panLoop.update(newPanOffset);
-    tiltLoop.update(tiltOffset);
-
     // 팬 오프셋 조정
-    panOffset = updateOffset(newPanOffset, oldPanOffset);   // update offset after PID
+    panOffset = updateOffset(newPanOffset, oldPanOffset);   // update offset before PID
     oldPanOffset = panOffset;
+
+    // PID 루프 업데이트
+    panLoop.update(PanOffset);
+    tiltLoop.update(tiltOffset);
 
     // PID 루프에서 팬 및 틸트 명령 가져오기
     int panCommand = panLoop.m_command;
