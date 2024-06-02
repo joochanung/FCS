@@ -1,3 +1,5 @@
+// 오늘 해야 할 일: pixy2, VL53L1X, 레이저 서보 모터 구현
+
 volatile bool newDataReceived = false;
 volatile int receivedData = 0;
 
