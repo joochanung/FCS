@@ -68,21 +68,23 @@ void loop()
       int errorX = blockX - centerX;
       int errorY = blockY - centerY;
 
+      float Kp = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 9);
+
       // Adjust servo positions to reduce the error
       if (abs(errorX) > 10) // Tolerance to avoid shaking
       {
         if (errorX > 0)
-          servoXPos -= stepSize;
+          servoXPos -= Kp * stepSize;
         else
-          servoXPos += stepSize;
+          servoXPos += Kp * stepSize;
       }
 
       if (abs(errorY) > 10) // Tolerance to avoid shaking
       {
         if (errorY > 0)
-          servoYPos += stepSize;
+          servoYPos += Kp * stepSize;
         else
-          servoYPos -= stepSize;
+          servoYPos -= Kp * stepSize;
       }
 
       // Ensure servo positions are within valid range
