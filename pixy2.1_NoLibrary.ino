@@ -39,9 +39,23 @@ void setup()
   OCR1B = tiltInitialPulseWidth; // 틸트 서보 모터 초기화 (180도 위치)
 }
 
+int32_t updateOffset(int32_t newOffset, int32_t oldOffset){
+  // int objectWidth = pixy.ccc.blocks[0].m_width;
+  // // 물체 크기에 따라 오프셋 최신화 범위 설정 (클수록 범위를 넓게, 작을수록 좁게)
+  // float updateThreshold = map(objectWidth, 0, pixy.frameWidth, 0.1, 0.9);
+
+  if(abs(pixy.ccc.blocks[0].m_x) > 0.1 * pixy.ccc.blocks[0].m_width){   // 화면의 20% 이내
+    return newOffset;
+  } else if(old == -1) {
+    return newOffset;
+  } else {
+    return oldOffset;
+  }
+}
+
 void loop()
 {  
-  int32_t panOffset, tiltOffset, newPanOffset;
+  int32_t panOffset, tiltOffset;
 
   // Pixy에서 블록 데이터 가져오기
   pixy.ccc.getBlocks();
@@ -49,28 +63,16 @@ void loop()
   if (pixy.ccc.numBlocks)
   {        
     // 팬 및 틸트 오프셋 계산
-    newPanOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;
-
-    int objectWidth = pixy.ccc.blocks[0].m_width;
-    int objectHeight = pixy.ccc.blocks[0].m_height;
-    int objectSize = objectWidth * objectHeight;
-
-    // 물체 크기에 따라 오프셋 최신화 범위 설정 (클수록 범위를 넓게, 작을수록 좁게)
-    float updateThreshold = map(objectSize, 0, pixy.frameWidth * pixy.frameHeight, 0.1, 0.9);
-
-    if(newPanOffset > updateThreshold * oldPanOffset){
-      panOffset = newPanOffset;
-    } else if(oldPanOffset == -1) {
-      panOffset = newPanOffset;
-    } else {
-      panOffset = oldPanOffset;
-    }
-    oldPanOffset = panOffset;
-    tiltOffset = (int32_t)pixy.ccc.blocks[0].m_y - (int32_t)pixy.frameHeight / 2;  
+    int32_t newPanOffset = (int32_t)pixy.frameWidth / 2 - (int32_t)pixy.ccc.blocks[0].m_x;    // get new pan offset
+    tiltOffset = (int32_t)pixy.ccc.blocks[0].m_y - (int32_t)pixy.frameHeight / 2;
 
     // PID 루프 업데이트
-    panLoop.update(panOffset);
+    panLoop.update(newPanOffset);
     tiltLoop.update(tiltOffset);
+
+    // 팬 오프셋 조정
+    panOffset = updateOffset(newPanOffset, oldPanOffset);   // update offset after PID
+    oldPanOffset = panOffset;
 
     // PID 루프에서 팬 및 틸트 명령 가져오기
     int panCommand = panLoop.m_command;
