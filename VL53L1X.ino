@@ -1,5 +1,3 @@
-// VL53L1X 라이브러리 예제 문제로 중간 발표에 포함 안 해도 됨.
-
 #include "Adafruit_VL53L1X.h"
 
 #define IRQ_PIN 2      // IRQ: Interrupt Request
