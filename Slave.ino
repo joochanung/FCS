@@ -32,7 +32,7 @@ const int centerX = screenWidth / 2;
 const int centerY = screenHeight / 2;
 
 // Servo movement increment
-const int stepSize = 2;
+const int stepSize = 1;
 
 // VL53L1X object
 Adafruit_VL53L1X vl53 = Adafruit_VL53L1X(XSHUT_PIN, IRQ_PIN);
@@ -119,21 +119,24 @@ void loop() {
       bool lockonX = false;
       bool lockonY = false;
 
+      float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 4);
+      float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 3);
+
       // 서보 모터 위치 조정
-      if (abs(errorX) > 10) {
+      if (abs(errorX) > 15) {
         if (errorX > 0)
-          servoXPos -= stepSize;
+          servoXPos -= Kpx * stepSize;
         else
-          servoXPos += stepSize;
+          servoXPos += Kpx * stepSize;
       } else {
         lockonX = true;
       }
 
       if (abs(errorY) > 10) {
         if (errorY > 0)
-          servoYPos += stepSize;
+          servoYPos += Kpy * stepSize;
         else
-          servoYPos -= stepSize;
+          servoYPos -= Kpy * stepSize;
       } else {
         lockonY = true;
       }
@@ -162,7 +165,7 @@ void loop() {
 
           // 추가 서보 모터 제어
           float y = radians(180 - servoYPos); // 서보 모터 각도를 라디안으로 변환
-          float tanYPrime = (distance * sin(y) + 70) / (distance * cos(y));
+          float tanYPrime = (distance * sin(y) + 100) / (distance * cos(y));
           float yPrime = atan(tanYPrime); // y' 계산
           int additionalServoPos = 180 - degrees(yPrime); // 170 - y'
           additionalServoPos = constrain(additionalServoPos, 0, 170); // 유효 범위로 제한
