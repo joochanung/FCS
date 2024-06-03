@@ -119,21 +119,24 @@ void loop() {
       bool lockonX = false;
       bool lockonY = false;
 
+      float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 9);
+      float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 9);
+
       // 서보 모터 위치 조정
       if (abs(errorX) > 10) {
         if (errorX > 0)
-          servoXPos -= stepSize;
+          servoXPos -= Kpx * stepSize;
         else
-          servoXPos += stepSize;
+          servoXPos += Kpx * stepSize;
       } else {
         lockonX = true;
       }
 
       if (abs(errorY) > 10) {
         if (errorY > 0)
-          servoYPos += stepSize;
+          servoYPos += Kpy * stepSize;
         else
-          servoYPos -= stepSize;
+          servoYPos -= Kpy * stepSize;
       } else {
         lockonY = true;
       }
