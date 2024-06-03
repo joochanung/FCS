@@ -42,6 +42,9 @@ int servoXPos = 180;
 int servoYPos = 180;
 int servoLPos = 170;
 
+bool lockonX = false;
+bool lockonY = false;
+
 void setup() {
   Serial.begin(9600);
 
@@ -90,10 +93,6 @@ void loop() {
         int errorX = blockX - centerX;
         int errorY = blockY - centerY;
 
-        // 오차 내에 있는지 확인하는 자료형
-        bool lockonX = false;
-        bool lockonY = false;
-
         // 빠르면서 부드러운 서보 모터의 회전을 위해 사용
         float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 4);
         float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 3);
@@ -106,6 +105,7 @@ void loop() {
           else {
             servoXPos += Kpx * stepSize;
           }
+          lockonX = false;
         }
 
         else {
@@ -121,6 +121,7 @@ void loop() {
           else {
             servoYPos -= Kpy * stepSize;
           }
+          lockonY = false;
         }
            
         else {
