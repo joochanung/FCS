@@ -154,19 +154,19 @@ void loop() {
             float y = radians(180 - servoYPos); // 서보 모터 각도를 라디안으로 변환
             float tanYPrime = (distance * sin(y) + 100) / (distance * cos(y));
             float yPrime = atan(tanYPrime); // y' 계산
-            servoLPos = 180 - degrees(yPrime); // 170 - y'
+            servoLPos = 170 - degrees(yPrime); // 170 - y'
             servoLPos = constrain(servoLPos, 0, 170); // 유효 범위로 제한
 
             // VL53L1X 센서 끄기
-            digitalWrite(XSHUT_PIN, LOW);
+            PORTD &= ~(1 << XSHUT_PIN);
             delay(100); // 센서가 완전히 꺼질 때까지 잠시 대기
 
             // 추가 서보 모터 제어  
-            ServoL.write(servoLPos);
+            servoL.write(servoLPos);
             delay(20); // 추가 서보 모터가 움직일 시간을 줌
 
             // VL53L1X 센서 다시 켜기
-            digitalWrite(XSHUT_PIN, HIGH);
+            PORTD |= (1 << XSHUT_PIN);
             delay(100); // 센서가 다시 켜질 때까지 잠시 대기
             
             // VL53L1X 센서 초기화
