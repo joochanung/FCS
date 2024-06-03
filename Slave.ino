@@ -38,6 +38,10 @@ const int stepSize = 1;
 Adafruit_VL53L1X vl53 = Adafruit_VL53L1X(XSHUT_PIN, IRQ_PIN);
 
 void setup() {
+  DDRB |= (1 << MISO);       // MISO 핀을 출력으로 설정
+  SPCR |= (1 << SPE);        // SPI 활성화
+  SPCR |= (1 << SPIE);       // SPI 인터럽트 활성화
+
   Serial.begin(9600);
   Wire.begin();  // I2C 통신 초기화
   
@@ -70,21 +74,19 @@ void setup() {
 
   // 타이밍 예산 50ms로 설정
   vl53.setTimingBudget(50);
-
-  // SPI 설정
-  SPI.begin();
-  pinMode(MISO, OUTPUT);       // MISO 핀을 출력으로 설정
 }
 
 void loop() {
   // SPI 데이터 수신 처리
   if (newDataReceived) {
+    cli();
     Serial.print("Received data: ");
     Serial.println(receivedData);
     newDataReceived = false;  // 플래그 초기화
+    sei();
   }
 
-  /*
+  
   int status = receivedData;
   if(status == 1){ // 전진
     // pixy2 비활성화
@@ -98,7 +100,7 @@ void loop() {
   else if(status == 0){ // 정지
     // 모든 장치 비활성화
   }
-  */
+  /*
   int i;
   int16_t distance;
 
@@ -197,5 +199,22 @@ void loop() {
         }
       }
     }
+  }
+  */
+}
+
+ISR(SPI_STC_vect) {
+  static byte highByte = 0;
+  static bool highByteReceived = false;
+
+  if (!highByteReceived) {
+    highByte = SPDR;             // 상위 바이트 읽기
+    highByteReceived = true;
+  } 
+  else {
+    byte lowByte = SPDR;         // 하위 바이트 읽기
+    receivedData = (highByte << 8) | lowByte; // 상위 바이트와 하위 바이트 결합
+    highByteReceived = false;
+    newDataReceived = true;     // 데이터 수신 완료 플래그 설정
   }
 }
