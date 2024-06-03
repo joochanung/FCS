@@ -1,3 +1,7 @@
+/*
+이 코드는 기존에 있었던 피에조 부저를 제거하고, 실험하면서 만든 피에조 부저 관련 코드를 넣은 것입니다.
+*/
+
 #include <Servo.h>
 #include <Pixy2.h>
 #include "Adafruit_VL53L1X.h"
