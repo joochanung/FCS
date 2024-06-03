@@ -6,6 +6,31 @@
 
 알아야 할 정보 :
 1. pixy.init()
+
+template <class LinkType> int8_t TPixy2<LinkType>::init(uint32_t arg)
+{
+  uint32_t t0;
+  int8_t res;
+  
+  res = m_link.open(arg);
+  if (res<0)
+    return res;
+  
+  // wait for pixy to be ready -- that is, Pixy takes a second or 2 boot up
+  // getVersion is an effective "ping".  We timeout after 5s.
+  for(t0=millis(); millis()-t0<5000; )
+  {
+    if (getVersion()>=0) // successful version get -> pixy is ready
+	{
+      getResolution(); // get resolution so we have it
+      return PIXY_RESULT_OK;
+    }	  
+    delayMicroseconds(5000); // delay for sync
+  }
+  // timeout
+  return PIXY_RESULT_TIMEOUT;
+}
+
 2. pixy.ccc.getBlocks()
 3. pixy.ccc.numBlocks
 4. pixy.ccc.blocks[i].m_x
