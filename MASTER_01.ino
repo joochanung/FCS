@@ -38,25 +38,12 @@ void setup() {
   // DC 모터 초기 설정
   Motor_init();
 
-  // LASERPIN 초기 설
+  // LASERPIN 초기 설정
   DDRC |= (1 << LASERPIN);
   PORTC &= ~(1 << LASERPIN);
 
-  // 피에조 부저 관련 추가 코드
-  DDRD &= ~(1 << BUZZER_INT); // PD2 (인터럽트 핀)를 입력으로 설정
-  PORTD |= (1 << BUZZER_INT); // PD2 핀에 풀업 저항 설정
-  DDRD &= ~(1 << BUZZERPWM); // PD3 (피에조 부저 핀)을 출력으로 설정
-  PORTD &= ~(1 << BUZZERPWM);
-
-  EICRA |= (1 << ISC01); // 인터럽트 신호의 하강 에지에서 인터럽트 발생
-  EIMSK |= (1 << INT0); // INT0 인터럽트 활성화
-
-  // 타이머2 설정 - 피에조 부저 주파수 설정
-  TCCR2A |= (1 << WGM21) | (1 << WGM20); // Fast PWM 모드
-  TCCR2A |= (1 << COM2B1); // 비교 일치 시 비반전 출력
-  TCCR2B |= (1 << CS21); // 분주비 8 설정
-  OCR2A = (16000000 / (2 * 8 * frequency)) - 1; // 주파수 설정
-  OCR2B = OCR2A / 2; // 50% 듀티 사이클 설정
+  // 피에조 부저 초기 설정
+  Piezo_init();
 }
 
 // Loop 단계
@@ -92,7 +79,7 @@ void sendDataToSlave(int data) {
   byte lowByte = data & 0xFF;         // Lower 8 bits
 
   // Select slave
-  PORTB &= ~(1 << PB2);
+  PORTB &= ~(1 << SS);
 
   // high & low bytes 변환
   SPDR = highByte;
@@ -101,7 +88,7 @@ void sendDataToSlave(int data) {
   while (!(SPSR & (1 << SPIF))) ; // 다른 변환 완료까지 대기
   
   // Deselect slave
-  PORTB |= (1 << PB2);
+  PORTB |= (1 << SS);
 
   Serial.print("Sent data: ");
   Serial.println(data);
@@ -134,26 +121,44 @@ void Motor_init(){
 
 void DCmotorON() {
   // 모터 A 제어
-  PORTB &= ~(1 << PB0); // in1Pin = LOW
-  PORTD |= (1 << PD7);  // in2Pin = HIGH
+  PORTB &= ~(1 << IN1); // in1Pin = LOW
+  PORTD |= (1 << IN2);  // in2Pin = HIGH
   OCR1A = 511;          // enaPin = 255 (최대 속도)
 
   // 모터 B 제어 (in3Pin = HIGH, in4Pin = LOW, enbPin = 255)
-  PORTD |= (1 << PD5);  // in3Pin = HIGH
-  PORTD &= ~(1 << PD4); // in4Pin = LOW
+  PORTD |= (1 << IN3);  // in3Pin = HIGH
+  PORTD &= ~(1 << IN4); // in4Pin = LOW
   OCR0A = 255;          // enbPin = 255 (최대 속도)
 }
 
 void DCmotorOFF() {
   // 모터 A 제어
-  PORTB &= ~(1 << PB0); // in1Pin = LOW
-  PORTD &= ~(1 << PD7); // in2Pin = LOW
+  PORTB &= ~(1 << IN1); // in1Pin = LOW
+  PORTD &= ~(1 << IN2); // in2Pin = LOW
   OCR1A = 0;          
 
   // 모터 B 제어
-  PORTD &= ~(1 << PD5); // in3Pin = LOW
-  PORTD &= ~(1 << PD4); // in4Pin = LOW
+  PORTD &= ~(1 << IN3); // in3Pin = LOW
+  PORTD &= ~(1 << IN4); // in4Pin = LOW
   OCR0A = 0;   
+}
+
+void Piezo_init() {
+  // 피에조 부저 관련 추가 코드
+  DDRD &= ~(1 << BUZZER_INT); // PD2 (인터럽트 핀)를 입력으로 설정
+  PORTD |= (1 << BUZZER_INT); // PD2 핀에 풀업 저항 설정
+  DDRD &= ~(1 << BUZZERPWM); // PD3 (피에조 부저 핀)을 출력으로 설정
+  PORTD &= ~(1 << BUZZERPWM);
+
+  EICRA |= (1 << ISC01); // 인터럽트 신호의 하강 에지에서 인터럽트 발생
+  EIMSK |= (1 << INT0); // INT0 인터럽트 활성화
+
+  // 타이머2 설정 - 피에조 부저 주파수 설정
+  TCCR2A |= (1 << WGM21) | (1 << WGM20); // Fast PWM 모드
+  TCCR2A |= (1 << COM2B1); // 비교 일치 시 비반전 출력
+  TCCR2B |= (1 << CS21); // 분주비 8 설정
+  OCR2A = (16000000 / (2 * 8 * frequency)) - 1; // 주파수 설정
+  OCR2B = OCR2A / 2; // 50% 듀티 사이클 설정
 }
 
 // Intterupt 단계
@@ -163,7 +168,7 @@ ISR(INT0_vect) {
   PORTD |= (1 << BUZZERPWM);
 
   for(uint32_t j = 0; j < 5; j++) {
-    for (uint32_t i = 0; i < 64000; ++i) {
+    for (uint32_t i = 0; i < 64000; i++) {
       asm("nop");
     }
   }
