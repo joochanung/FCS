@@ -213,6 +213,13 @@ void loop() {
         }
       }
     }
+    else{
+      servoX.write(90);
+      for(int pos = 90; pos <= 180 ; pos++){
+        servoX.write(pos);
+        delay(15);
+      }    
+    }
   }
   else{
   }
