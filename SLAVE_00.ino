@@ -13,7 +13,7 @@
 #define MISO PB4
 #define SCK PB5
 
-#define signalPin 7      // 시그널 전달 핀 (PD7)
+#define signalPin PD7      // 시그널 전달 핀 (PD7)
 
 // pixy 객체 생성
 Pixy2 pixy;
@@ -63,7 +63,7 @@ void setup() {
   // VL53L1X 초기화
   VL53L1X_init();
 
-  pinMode(signalPin, INPUT);
+  DDRD |= (1 << signalPin);
 }
 
 void loop() {
@@ -89,22 +89,6 @@ void loop() {
     // Pixy2 블록이 감지된 경우
     if (pixy.ccc.numBlocks) {
       Serial.println(pixy.ccc.numBlocks);
-      // 블록 크기 순으로 정렬
-      for (int i = 0; i < pixy.ccc.numBlocks - 1; i++) {
-        int max = i;
-        for (int j = i + 1; j < pixy.ccc.numBlocks; j++) {
-          if (compareBlockSize(pixy.ccc.blocks[j], pixy.ccc.blocks[max])) {
-            max = j;
-          }
-        }
-      // 블록을 교환
-        if (i != max) {
-          Block temp = pixy.ccc.blocks[i];
-          pixy.ccc.blocks[i] = pixy.ccc.blocks[max];
-          pixy.ccc.blocks[max] = temp;
-        }
-      }
-
       for (i = 0; i < pixy.ccc.numBlocks; i++) {
         // block의 X, Y 위치
         int blockX = pixy.ccc.blocks[i].m_x;
@@ -114,12 +98,9 @@ void loop() {
         int errorX = blockX - centerX;
         int errorY = blockY - centerY;
 
-        // 빠르면서 부드러운 서보 모터의 회전을 위해 사용 
-        // (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-        // float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 4);
-        float Kpx = abs(errorX) * (4 - 1) / pixy.frameWidth + 1;
-        // float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 3);
-        float Kpy = abs(errorY) * (3 - 1) / pixy.frameHeight + 1;
+        // 빠르면서 부드러운 서보 모터의 회전을 위해 사용
+        float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 4);
+        float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 3);
 
         // 서보 모터 위치 조정(x축)
         if (abs(errorX) > 15) {
@@ -181,11 +162,18 @@ void loop() {
             servoLPos = 170 - degrees(yPrime); // 170 - y'
             servoLPos = constrain(servoLPos, 0, 170); // 유효 범위로 제한
 
-            if (lockon < 3) {
+            if (lockon < 5) {
               lockon += 1;
             }
-            else if (lockon == 3) {
+            else if (lockon == 5) {
               lockon = 0;
+            }
+
+            if (lockon == 0) {
+              DDRB |= (1 << servoLPin);
+              PORTB |= (1 << servoLPin);
+              DDRB &= ~(1 << servoLPin);
+              PORTB &= ~(1 << servoLPin);
             }
 
             // VL53L1X 센서 끄기
@@ -195,13 +183,6 @@ void loop() {
             // 추가 서보 모터 제어  
             servoL.write(servoLPos);
             delay(20); // 추가 서보 모터가 움직일 시간을 줌
-
-            if (lockon == 1) {
-              pinMode(signalPin, OUTPUT);
-              digitalWrite(signalPin, HIGH);
-              pinMode(signalPin, INPUT);
-              digitalWrite(signalPin, LOW); 
-            }
 
             // VL53L1X 센서 다시 켜기
             PORTD |= (1 << XSHUT_PIN);
@@ -263,10 +244,4 @@ void VL53L1X_init(){
 
   // 타이밍 예산 50ms로 설정
   vl53.setTimingBudget(50);
-}
-
-bool compareBlockSize(const Block &a, const Block &b) {
-  int A = a.m_width * a.m_height;
-  int B = b.m_width * b.m_height;
-  return A > B;
 }
