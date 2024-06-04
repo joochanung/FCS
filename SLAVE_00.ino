@@ -43,6 +43,7 @@ const int stepSize = 1;
 int servoXPos = 180;
 int servoYPos = 180;
 int servoLPos = 170;
+int lockon = 0;
 
 bool lockonX = false;
 bool lockonY = false;
@@ -88,22 +89,6 @@ void loop() {
     // Pixy2 블록이 감지된 경우
     if (pixy.ccc.numBlocks) {
       Serial.println(pixy.ccc.numBlocks);
-      // 블록 크기 순으로 정렬
-      for (int i = 0; i < pixy.ccc.numBlocks - 1; i++) {
-        int maxIdx = i;
-        for (int j = i + 1; j < pixy.ccc.numBlocks; j++) {
-          if (compareBlockSize(pixy.ccc.blocks[j], pixy.ccc.blocks[maxIdx])) {
-            maxIdx = j;
-          }
-        }
-      // 블록을 교환
-        if (i != maxIdx) {
-          Block temp = pixy.ccc.blocks[i];
-          pixy.ccc.blocks[i] = pixy.ccc.blocks[maxIdx];
-          pixy.ccc.blocks[maxIdx] = temp;
-        }
-      }
-
       for (i = 0; i < pixy.ccc.numBlocks; i++) {
         // block의 X, Y 위치
         int blockX = pixy.ccc.blocks[i].m_x;
@@ -177,9 +162,18 @@ void loop() {
             servoLPos = 170 - degrees(yPrime); // 170 - y'
             servoLPos = constrain(servoLPos, 0, 170); // 유효 범위로 제한
 
-            pinMode(signalPin, OUTPUT); 
-            digitalWrite(signalPin, HIGH);
-            
+            if (lockon == 0) {
+              lockon += 1;
+            }
+            else if (lockon == 5) {
+              lockon = 0;
+            }
+
+            if (lockon == 0) {
+              pinMode(signalPin, OUTPUT);
+              digitalWrite(signalPin, HIGH); 
+            }
+
             // VL53L1X 센서 끄기
             PORTD &= ~(1 << XSHUT_PIN);
             delay(100); // 센서가 완전히 꺼질 때까지 잠시 대기
@@ -195,8 +189,10 @@ void loop() {
             // VL53L1X 센서 초기화
             VL53L1X_init();
 
-            digitalWrite(signalPin, LOW);
-            pinMode(signalPin, INPUT);  
+            if (lockon == 0) {
+              pinMode(signalPin, INPUT);
+              digitalWrite(signalPin, LOW); 
+            }
           }
         }
       }
@@ -251,10 +247,4 @@ void VL53L1X_init(){
 
   // 타이밍 예산 50ms로 설정
   vl53.setTimingBudget(50);
-}
-
-bool compareBlockSize(const Block &a, const Block &b) {
-  int A = a.m_width * a.m_height;
-  int B = b.m_width * b.m_height;
-  return A > B;
 }
