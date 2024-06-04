@@ -13,6 +13,8 @@
 #define MISO PB4
 #define SCK PB5
 
+#define signalPin 7      // 시그널 전달 핀 (PD7)
+
 // pixy 객체 생성
 Pixy2 pixy;
 
@@ -59,6 +61,8 @@ void setup() {
 
   // VL53L1X 초기화
   VL53L1X_init();
+
+  pinMode(signalPin, INPUT);
 }
 
 void loop() {
@@ -152,9 +156,8 @@ void loop() {
         
         // 서보 모터의 위치가 오차 내에 있는 경우
         if (lockonX && lockonY) {
-          // VL53L1X 거리 측정
-          if (vl53.dataReady()) { 
-            distance = vl53.distance();
+          if (vl53.dataReady()) { // VL53L1X 거리 측정
+            distance = vl53.distance(); 
             if (distance == -1) { // 거리 측정이 안 되면 오류 발생
               Serial.print(F("Couldn't get distance: "));
               Serial.println(vl53.vl_status);
@@ -174,10 +177,13 @@ void loop() {
             servoLPos = 170 - degrees(yPrime); // 170 - y'
             servoLPos = constrain(servoLPos, 0, 170); // 유효 범위로 제한
 
+            pinMode(signalPin, OUTPUT); 
+            digitalWrite(signalPin, HIGH);
+            
             // VL53L1X 센서 끄기
             PORTD &= ~(1 << XSHUT_PIN);
             delay(100); // 센서가 완전히 꺼질 때까지 잠시 대기
-
+            
             // 추가 서보 모터 제어  
             servoL.write(servoLPos);
             delay(20); // 추가 서보 모터가 움직일 시간을 줌
@@ -188,7 +194,10 @@ void loop() {
             
             // VL53L1X 센서 초기화
             VL53L1X_init();
-          } 
+
+            digitalWrite(signalPin, LOW);
+            pinMode(signalPin, INPUT);  
+          }
         }
       }
     }

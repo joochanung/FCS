@@ -38,14 +38,28 @@ void setup() {
   // DC 모터 초기 설정
   Motor_init();
 
-  // 레이저 모듈
-  /*
-  pinMode(LASERPIN,OUTPUT);
-  digitalWrite(LASERPIN,HIGH); */
+  // LASERPIN 초기 설
   DDRC |= (1 << LASERPIN);
   PORTC &= ~(1 << LASERPIN);
+
+  // 피에조 부저 관련 추가 코드
+  DDRD &= ~(1 << BUZZER_INT); // PD2 (인터럽트 핀)를 입력으로 설정
+  PORTD |= (1 << BUZZER_INT); // PD2 핀에 풀업 저항 설정
+  DDRD &= ~(1 << BUZZERPWM); // PD3 (피에조 부저 핀)을 출력으로 설정
+  PORTD &= ~(1 << BUZZERPWM);
+
+  EICRA |= (1 << ISC01); // 인터럽트 신호의 하강 에지에서 인터럽트 발생
+  EIMSK |= (1 << INT0); // INT0 인터럽트 활성화
+
+  // 타이머2 설정 - 피에조 부저 주파수 설정
+  TCCR2A |= (1 << WGM21) | (1 << WGM20); // Fast PWM 모드
+  TCCR2A |= (1 << COM2B1); // 비교 일치 시 비반전 출력
+  TCCR2B |= (1 << CS21); // 분주비 8 설정
+  OCR2A = (16000000 / (2 * 8 * frequency)) - 1; // 주파수 설정
+  OCR2B = OCR2A / 2; // 50% 듀티 사이클 설정
 }
 
+// Loop 단계
 void loop() {
   if (btserial.available()) {
     char cmd = (char)btserial.read();
@@ -72,7 +86,7 @@ void loop() {
   }
 }
 
-// 데이터 전송 단계
+// Function 단계
 void sendDataToSlave(int data) {
   byte highByte = (data >> 8) & 0xFF; // Upper 8 bits
   byte lowByte = data & 0xFF;         // Lower 8 bits
@@ -142,3 +156,14 @@ void DCmotorOFF() {
   OCR0A = 0;   
 }
 
+// Intterupt 단계
+ISR(INT0_vect) {
+  // 인터럽트가 발생하면 피에조 부저를 켭니다
+  DDRD |= (1 << BUZZERPWM);
+  PORTD |= (1 << BUZZERPWM);
+  for (uint32_t i = 0; i < 64000; ++i) {
+    asm("nop");
+  }
+  DDRD &= ~(1 << BUZZERPWM);
+  PORTD &= ~(1 << BUZZERPWM);
+}
