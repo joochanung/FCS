@@ -178,16 +178,11 @@ void loop() {
             servoLPos = 170 - degrees(yPrime); // 170 - y'
             servoLPos = constrain(servoLPos, 0, 170); // 유효 범위로 제한
 
-            if (lockon == 0) {
+            if (lockon < 3) {
               lockon += 1;
             }
-            else if (lockon == 5) {
+            else if (lockon == 3) {
               lockon = 0;
-            }
-
-            if (lockon == 0) {
-              pinMode(signalPin, OUTPUT);
-              digitalWrite(signalPin, HIGH); 
             }
 
             // VL53L1X 센서 끄기
@@ -198,17 +193,19 @@ void loop() {
             servoL.write(servoLPos);
             delay(20); // 추가 서보 모터가 움직일 시간을 줌
 
+            if (lockon == 1) {
+              pinMode(signalPin, OUTPUT);
+              digitalWrite(signalPin, HIGH);
+              pinMode(signalPin, INPUT);
+              digitalWrite(signalPin, LOW); 
+            }
+
             // VL53L1X 센서 다시 켜기
             PORTD |= (1 << XSHUT_PIN);
             delay(100); // 센서가 다시 켜질 때까지 잠시 대기
             
             // VL53L1X 센서 초기화
             VL53L1X_init();
-
-            if (lockon == 0) {
-              pinMode(signalPin, INPUT);
-              digitalWrite(signalPin, LOW); 
-            }
           }
         }
       }
