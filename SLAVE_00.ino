@@ -73,7 +73,7 @@ void loop() {
     newDataReceived = false;  // 플래그 초기화
   }
 
-  int status = 2;
+  int status = receivedData;
 
   if (status == 2) { // 기동간 사격
     // Pixy2 활성화
