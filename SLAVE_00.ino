@@ -73,7 +73,7 @@ void loop() {
     newDataReceived = false;  // 플래그 초기화
   }
 
-  int status = receivedData;
+  int status = 2;
 
   if (status == 2) { // 기동간 사격
     // Pixy2 활성화
@@ -81,14 +81,36 @@ void loop() {
 
     int i;
     int16_t distance;
+    bool blockDetected = false;
 
-    // Pixy2 블록 감지
     pixy.ccc.getBlocks();
-  
+    /*
+    while(!blockDetected){
+      servoX.write(90);
+      // Pixy2 블록 감지
+      for(int pos = 90; pos <= 180 ; pos++){
+        servoX.write(pos);
+        pixy.ccc.getBlocks();
+        delay(20);
+        if(pixy.ccc.numBlocks != 0){
+            blockDetected = true;
+        }
+      }
+
+      for(int pos = 180; pos >= 90 ; pos--){
+        servoX.write(pos);
+        pixy.ccc.getBlocks();
+        delay(20);
+        if(pixy.ccc.numBlocks != 0){
+            blockDetected = true;
+        }
+      }
+    }
+    */
     // Pixy2 블록이 감지된 경우
     if (pixy.ccc.numBlocks) {
       Serial.println(pixy.ccc.numBlocks);
-
+      
       // 가장 큰 블록을 찾기
       int max = 0;
       for (int i = 1; i < pixy.ccc.numBlocks; i++) {
@@ -103,7 +125,7 @@ void loop() {
         pixy.ccc.blocks[0] = pixy.ccc.blocks[max];
         pixy.ccc.blocks[max] = temp;
       }
-        
+      
       // block의 X, Y 위치
       int blockX = pixy.ccc.blocks[0].m_x;
       int blockY = pixy.ccc.blocks[0].m_y;
@@ -155,7 +177,8 @@ void loop() {
       if(servoXPos > 70){ // 110도까지 추적
         servoX.write(servoXPos);
       } else { // 110도 이상으로 회전하면 초기화
-        servoX.write(90);
+        servoXPos = 180;
+        servoX.write(servoXPos);
       }
       servoY.write(servoYPos);
         
@@ -211,13 +234,6 @@ void loop() {
           VL53L1X_init();
         }
       }
-    }
-    else{
-      servoX.write(90);
-      for(int pos = 90; pos <= 180 ; pos++){
-        servoX.write(pos);
-        delay(15);
-      }    
     }
   }
   else{
