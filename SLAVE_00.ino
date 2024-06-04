@@ -153,7 +153,11 @@ void loop() {
       servoXPos = constrain(servoXPos, 0, 180);
       servoYPos = constrain(servoYPos, 0, 180);
 
-      servoX.write(servoXPos);
+      if(servoXPos > 70){
+        servoX.write(servoXPos);
+      } else {
+        servoX.write(90);
+      }
       servoY.write(servoYPos);
         
       // 서보 모터의 위치가 오차 내에 있는 경우
