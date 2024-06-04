@@ -88,21 +88,20 @@ void loop() {
     // Pixy2 블록이 감지된 경우
     if (pixy.ccc.numBlocks) {
       Serial.println(pixy.ccc.numBlocks);
-      
-      // 블록 크기 순으로 정렬
-      for (int i = 0; i < pixy.ccc.numBlocks - 1; i++) {
-        int max = i;
-        for (int j = i + 1; j < pixy.ccc.numBlocks; j++) {
-          if (compareBlockSize(pixy.ccc.blocks[j], pixy.ccc.blocks[max])) {
-            max = j;
-          }
+
+      // 가장 큰 블록을 찾기
+      int max = 0;
+      for (int i = 1; i < pixy.ccc.numBlocks; i++) {
+        if (compareBlockSize(pixy.ccc.blocks[i], pixy.ccc.blocks[max])) {
+          max = i;
         }
-      // 블록을 교환
-        if (i != max) {
-          Block temp = pixy.ccc.blocks[i];
-          pixy.ccc.blocks[i] = pixy.ccc.blocks[max];
-          pixy.ccc.blocks[max] = temp;
-        }
+      }
+
+      // 가장 큰 블록을 첫 번째 위치로 이동
+      if (max != 0) {
+        Block temp = pixy.ccc.blocks[0];
+        pixy.ccc.blocks[0] = pixy.ccc.blocks[max];
+        pixy.ccc.blocks[max] = temp;
       }
         
       // block의 X, Y 위치
@@ -153,9 +152,9 @@ void loop() {
       servoXPos = constrain(servoXPos, 0, 180);
       servoYPos = constrain(servoYPos, 0, 180);
 
-      if(servoXPos > 70){
+      if(servoXPos > 70){ // 110도까지 추적
         servoX.write(servoXPos);
-      } else {
+      } else { // 110도 이상으로 회전하면 초기화
         servoX.write(90);
       }
       servoY.write(servoYPos);
