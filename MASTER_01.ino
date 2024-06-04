@@ -161,9 +161,13 @@ ISR(INT0_vect) {
   // 인터럽트가 발생하면 피에조 부저를 켭니다
   DDRD |= (1 << BUZZERPWM);
   PORTD |= (1 << BUZZERPWM);
-  for (uint32_t i = 0; i < 64000; ++i) {
-    asm("nop");
+
+  for(uint32_t j = 0; j < 5; j++) {
+    for (uint32_t i = 0; i < 64000; ++i) {
+      asm("nop");
+    }
   }
+  
   DDRD &= ~(1 << BUZZERPWM);
   PORTD &= ~(1 << BUZZERPWM);
 }
