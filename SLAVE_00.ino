@@ -89,6 +89,22 @@ void loop() {
     // Pixy2 블록이 감지된 경우
     if (pixy.ccc.numBlocks) {
       Serial.println(pixy.ccc.numBlocks);
+      // 블록 크기 순으로 정렬
+      for (int i = 0; i < pixy.ccc.numBlocks - 1; i++) {
+        int maxIdx = i;
+        for (int j = i + 1; j < pixy.ccc.numBlocks; j++) {
+          if (compareBlockSize(pixy.ccc.blocks[j], pixy.ccc.blocks[maxIdx])) {
+            maxIdx = j;
+          }
+        }
+      // 블록을 교환
+        if (i != maxIdx) {
+          Block temp = pixy.ccc.blocks[i];
+          pixy.ccc.blocks[i] = pixy.ccc.blocks[maxIdx];
+          pixy.ccc.blocks[maxIdx] = temp;
+        }
+      }
+      
       for (i = 0; i < pixy.ccc.numBlocks; i++) {
         // block의 X, Y 위치
         int blockX = pixy.ccc.blocks[i].m_x;
