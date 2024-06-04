@@ -88,107 +88,124 @@ void loop() {
     // Pixy2 블록이 감지된 경우
     if (pixy.ccc.numBlocks) {
       Serial.println(pixy.ccc.numBlocks);
-      for (i = 0; i < pixy.ccc.numBlocks; i++) {
-        // block의 X, Y 위치
-        int blockX = pixy.ccc.blocks[i].m_x;
-        int blockY = pixy.ccc.blocks[i].m_y;
-
-        // 중앙 위치까지의 거리
-        int errorX = blockX - centerX;
-        int errorY = blockY - centerY;
-
-        // 빠르면서 부드러운 서보 모터의 회전을 위해 사용
-        float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 4);
-        float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 3);
-
-        // 서보 모터 위치 조정(x축)
-        if (abs(errorX) > 15) {
-          if (errorX > 0) {
-            servoXPos -= Kpx * stepSize;
+      
+      // 블록 크기 순으로 정렬
+      for (int i = 0; i < pixy.ccc.numBlocks - 1; i++) {
+        int max = i;
+        for (int j = i + 1; j < pixy.ccc.numBlocks; j++) {
+          if (compareBlockSize(pixy.ccc.blocks[j], pixy.ccc.blocks[max])) {
+            max = j;
           }
-          else {
-            servoXPos += Kpx * stepSize;
-          }
-          lockonX = false;
         }
-
-        else {
-          lockonX = true;
+      // 블록을 교환
+        if (i != max) {
+          Block temp = pixy.ccc.blocks[i];
+          pixy.ccc.blocks[i] = pixy.ccc.blocks[max];
+          pixy.ccc.blocks[max] = temp;
         }
-
-        // 서보 모터 위치 조정(y축)
-        if (abs(errorY) > 10) {
-          if (errorY > 0) {
-            servoYPos += Kpy * stepSize;
-          }
-
-          else {
-            servoYPos -= Kpy * stepSize;
-          }
-          lockonY = false;
-        }
-           
-        else {
-          lockonY = true;
-        }
-
-        servoXPos = constrain(servoXPos, 0, 180);
-        servoYPos = constrain(servoYPos, 0, 180);
-
-        servoX.write(servoXPos);
-        servoY.write(servoYPos);
+      }
         
-        // 서보 모터의 위치가 오차 내에 있는 경우
-        if (lockonX && lockonY) {
-          if (vl53.dataReady()) { // VL53L1X 거리 측정
-            distance = vl53.distance(); 
-            if (distance == -1) { // 거리 측정이 안 되면 오류 발생
-              Serial.print(F("Couldn't get distance: "));
-              Serial.println(vl53.vl_status);
-              return;
-            }
+      // block의 X, Y 위치
+      int blockX = pixy.ccc.blocks[0].m_x;
+      int blockY = pixy.ccc.blocks[0].m_y;
 
-            Serial.print(F("Distance: "));
-            Serial.print(distance);
-            Serial.println(" mm");
+      // 중앙 위치까지의 거리
+      int errorX = blockX - centerX;
+      int errorY = blockY - centerY;
 
-            vl53.clearInterrupt();
+      // 빠르면서 부드러운 서보 모터의 회전을 위해 사용
+      // float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 4);
+      float Kpx = abs(errorX) * (4 - 1) / pixy.frameWidth + 1;
+      // float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 3);
+      float Kpy = abs(errorY) * (3 - 1) / pixy.frameHeight + 1;
 
-            // 추가 서보 모터 제어
-            float y = radians(180 - servoYPos); // 서보 모터 각도를 라디안으로 변환
-            float tanYPrime = (distance * sin(y) + 100) / (distance * cos(y));
-            float yPrime = atan(tanYPrime); // y' 계산
-            servoLPos = 170 - degrees(yPrime); // 170 - y'
-            servoLPos = constrain(servoLPos, 0, 170); // 유효 범위로 제한
+      // 서보 모터 위치 조정(x축)
+      if (abs(errorX) > 20) {
+        if (errorX > 0) {
+          servoXPos -= Kpx * stepSize;
+        }
+        else {
+          servoXPos += Kpx * stepSize;
+        }
+        lockonX = false;
+      }
 
-            // VL53L1X 센서 끄기
-            PORTD &= ~(1 << XSHUT_PIN);
-            delay(100); // 센서가 완전히 꺼질 때까지 잠시 대기
+      else {
+        lockonX = true;
+      }
+
+      // 서보 모터 위치 조정(y축)
+      if (abs(errorY) > 10) {
+        if (errorY > 0) {
+          servoYPos += Kpy * stepSize;
+        }
+
+        else {
+          servoYPos -= Kpy * stepSize;
+        }
+        lockonY = false;
+      }
+           
+      else {
+        lockonY = true;
+      }
+
+      servoXPos = constrain(servoXPos, 0, 180);
+      servoYPos = constrain(servoYPos, 0, 180);
+
+      servoX.write(servoXPos);
+      servoY.write(servoYPos);
+        
+      // 서보 모터의 위치가 오차 내에 있는 경우
+      if (lockonX && lockonY) {
+        if (vl53.dataReady()) { // VL53L1X 거리 측정
+          distance = vl53.distance() - 10; 
+          if (distance == -1) { // 거리 측정이 안 되면 오류 발생
+            Serial.print(F("Couldn't get distance: "));
+            Serial.println(vl53.vl_status);
+            return;
+          }
+
+          Serial.print(F("Distance: "));
+          Serial.print(distance);
+          Serial.println(" mm");
+
+          vl53.clearInterrupt();
+
+          // 추가 서보 모터 제어
+          float y = radians(180 - servoYPos); // 서보 모터 각도를 라디안으로 변환
+          float tanYPrime = (distance * sin(y) + 100) / (distance * cos(y));
+          float yPrime = atan(tanYPrime); // y' 계산
+          servoLPos = 170 - (degrees(yPrime) * 1.15); // 170 - y'
+          servoLPos = constrain(servoLPos, 0, 170); // 유효 범위로 제한
+
+          // VL53L1X 센서 끄기
+          PORTD &= ~(1 << XSHUT_PIN);
+          delay(30); // 센서가 완전히 꺼질 때까지 잠시 대기
             
-            // 추가 서보 모터 제어  
-            servoL.write(servoLPos);
-            delay(20); // 추가 서보 모터가 움직일 시간을 줌
+          // 추가 서보 모터 제어  
+          servoL.write(servoLPos);
+          // delay(20); // 추가 서보 모터가 움직일 시간을 줌
 
-            if (lockon == 0) {
-              DDRD |= (1 << signalPin);
-              PORTD |= (1 << signalPin);
-              DDRD &= ~(1 << signalPin);
-              PORTD &= ~(1 << signalPin);
-            }
+          if (lockon == 0) {
+            DDRD |= (1 << signalPin);
+            PORTD |= (1 << signalPin);
+            DDRD &= ~(1 << signalPin);
+            PORTD &= ~(1 << signalPin);
+          }
 
-            // VL53L1X 센서 다시 켜기
-            PORTD |= (1 << XSHUT_PIN);
-            if (lockon < 3) {
-              lockon += 1;
-            }
-            else if (lockon == 3) {
-              lockon = 0;
-            }
-            delay(90); // 센서가 다시 켜질 때까지 잠시 대기
+          // VL53L1X 센서 다시 켜기
+          PORTD |= (1 << XSHUT_PIN);
+          if (lockon < 3) {
+            lockon += 1;
+          }
+          else if (lockon == 3) {
+            lockon = 0;
+          }
+          delay(30); // 센서가 다시 켜질 때까지 잠시 대기
             
             // VL53L1X 센서 초기화
-            VL53L1X_init();
-          }
+          VL53L1X_init();
         }
       }
     }
@@ -242,4 +259,11 @@ void VL53L1X_init(){
 
   // 타이밍 예산 50ms로 설정
   vl53.setTimingBudget(50);
+}
+
+
+bool compareBlockSize(const Block &a, const Block &b) {
+  int A = a.m_x;
+  int B = b.m_x; 
+  return A > B;
 }
