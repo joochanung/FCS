@@ -114,9 +114,12 @@ void loop() {
         int errorX = blockX - centerX;
         int errorY = blockY - centerY;
 
-        // 빠르면서 부드러운 서보 모터의 회전을 위해 사용
-        float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 4);
-        float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 3);
+        // 빠르면서 부드러운 서보 모터의 회전을 위해 사용 
+        // (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        // float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 4);
+        float Kpx = abs(errorX) * (4 - 1) / pixy.frameWidth + 1;
+        // float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 3);
+        float Kpy = abs(errorY) * (3 - 1) / pixy.frameHeight + 1;
 
         // 서보 모터 위치 조정(x축)
         if (abs(errorX) > 15) {
