@@ -69,11 +69,11 @@ void loop() {
     newDataReceived = false;  // 플래그 초기화
   }
 
-  int status = receiveData;
+  int status = receivedData;
 
   if (status == 2) { // 기동간 사격
     // Pixy2 활성화
-    pixy_init();
+    pixy.init();
 
     int i;
     int16_t distance;
@@ -201,12 +201,12 @@ void Servo_init(){
   // 서보모터 활성화
   servoX.attach(servoXPin);
   servoY.attach(servoYPin);
-  ServoL.attach(servoLPin);
+  servoL.attach(servoLPin);
 
   // 초기 위치로 이동
   servoX.write(servoXPos);
   servoY.write(servoYPos);
-  ServoL.write(servoLPos);    
+  servoL.write(servoLPos);    
 }
 
 void VL53L1X_init(){
