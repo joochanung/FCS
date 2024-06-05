@@ -128,7 +128,7 @@ void DCmotorON() {
   // 모터 B 제어 (in3Pin = HIGH, in4Pin = LOW, enbPin = 255)
   PORTD |= (1 << IN3);  // in3Pin = HIGH
   PORTD &= ~(1 << IN4); // in4Pin = LOW
-  OCR0A = 255;          // enbPin = 255 (최대 속도)
+  OCR0A = 100;          // enbPin = 255 (최대 속도)
 }
 
 void DCmotorOFF() {
