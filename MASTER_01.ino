@@ -158,7 +158,7 @@ void Piezo_init() {
   TCCR2A |= (1 << COM2B1); // 비교 일치 시 비반전 출력
   TCCR2B |= (1 << CS21); // 분주비 8 설정
   OCR2A = (16000000 / (2 * 8 * frequency)) - 1; // 주파수 설정
-  OCR2B = OCR2A / 2; // 50% 듀티 사이클 설정
+  OCR2B = OCR2A / 10; // 520% 듀티 사이클 설정
 }
 
 // Intterupt 단계
