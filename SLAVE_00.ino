@@ -88,7 +88,7 @@ void loop() {
     bool blockDetected = false;
 
     pixy.ccc.getBlocks();
-
+    
     // Pixy2 블록이 감지된 경우
     if (pixy.ccc.numBlocks) {
       Serial.println(pixy.ccc.numBlocks);
@@ -128,7 +128,7 @@ void loop() {
           servoXPos -= Kpx * stepSize;
         }
         else {
-          servoXPos += Kpx * stepSize;
+          servoXPos += Kpx * 2 * stepSize;
         }
         lockonX = false;
       }
@@ -156,74 +156,60 @@ void loop() {
       servoXPos = constrain(servoXPos, 0, 180);
       servoYPos = constrain(servoYPos, 0, 180);
 
-      if(servoXPos > 50){ // 130도까지 추적
-        servoX.write(servoXPos);
-        servoY.write(servoYPos);
-              // 서보 모터의 위치가 오차 내에 있는 경우
-        if (lockonX && lockonY) {
-          if (vl53.dataReady()) { // VL53L1X 거리 측정
-            distance = vl53.distance() - 10; 
-            if (distance == -1) { // 거리 측정이 안 되면 오류 발생
-              Serial.print(F("Couldn't get distance: "));
-              Serial.println(vl53.vl_status);
-              return;
-            }
-
-            Serial.print(F("Distance: "));
-            Serial.print(distance);
-            Serial.println(" mm");
-
-            vl53.clearInterrupt();
-
-            // 추가 서보 모터 제어
-            float y = radians(180 - servoYPos); // 서보 모터 각도를 라디안으로 변환
-            float tanYPrime = (distance * sin(y) + 100) / (distance * cos(y));
-            float yPrime = atan(tanYPrime); // y' 계산
-            servoLPos = 170 - (degrees(yPrime) * 1.15); // 170 - y'
-            servoLPos = constrain(servoLPos, 0, 170); // 유효 범위로 제한
-
-            // VL53L1X 센서 끄기
-            PORTD &= ~(1 << XSHUT_PIN);
-            delay(30); // 센서가 완전히 꺼질 때까지 잠시 대기
-            
-            // 추가 서보 모터 제어  
-            servoL.write(servoLPos);
-            // delay(20); // 추가 서보 모터가 움직일 시간을 줌
-
-            if (lockon == 0) {
-              DDRD |= (1 << signalPin);
-              PORTD |= (1 << signalPin);
-              DDRD &= ~(1 << signalPin);
-              PORTD &= ~(1 << signalPin);
-            }
-
-            // VL53L1X 센서 다시 켜기
-            PORTD |= (1 << XSHUT_PIN);
-            if (lockon < 3) {
-              lockon += 1;
-            }
-            else if (lockon == 3) {
-              lockon = 0;
-            }
-            delay(30); // 센서가 다시 켜질 때까지 잠시 대기
-            
-            // VL53L1X 센서 초기화
-            VL53L1X_init();
+      //if(servoXPos > 90){ // 130도까지 추적
+      servoX.write(servoXPos);
+      servoY.write(servoYPos);
+      // 서보 모터의 위치가 오차 내에 있는 경우
+      if (lockonX && lockonY) {
+        if (vl53.dataReady()) { // VL53L1X 거리 측정
+          distance = vl53.distance(); 
+          if (distance == -1) { // 거리 측정이 안 되면 오류 발생
+            Serial.print(F("Couldn't get distance: "));
+            Serial.println(vl53.vl_status);
+            return;
           }
+
+          Serial.print(F("Distance: "));
+          Serial.print(distance);
+          Serial.println(" mm");
+
+          vl53.clearInterrupt();
+
+          // 추가 서보 모터 제어
+          float y = radians(180 - servoYPos); // 서보 모터 각도를 라디안으로 변환
+          float tanYPrime = (distance * sin(y) + 100) / (distance * cos(y));
+          float yPrime = atan(tanYPrime); // y' 계산
+          servoLPos = 165 - (degrees(yPrime)); // 170 - y'
+          servoLPos = constrain(servoLPos, 0, 170); // 유효 범위로 제한
+
+          // VL53L1X 센서 끄기
+          PORTD &= ~(1 << XSHUT_PIN);
+          delay(30); // 센서가 완전히 꺼질 때까지 잠시 대기
+            
+          // 추가 서보 모터 제어  
+          servoL.write(servoLPos);
+          delay(20); // 추가 서보 모터가 움직일 시간을 줌
+
+          if (lockon == 0) {
+            DDRD |= (1 << signalPin);
+            PORTD |= (1 << signalPin);
+            DDRD &= ~(1 << signalPin);
+            PORTD &= ~(1 << signalPin);
+          }
+
+          if (lockon < 2) {
+            lockon += 1;            
+          }
+
+          else if (lockon == 2) {
+            lockon = 0;
+          }
+          // VL53L1X 센서 다시 켜기
+          PORTD |= (1 << XSHUT_PIN);
+            
+          // VL53L1X 센서 초기화
+          VL53L1X_init();
         }
-      }
-      else { // 110도 이상으로 회전하면 초기화
-        servoXPos = 180;
-        servoYPos = 180;
-        PORTD &= ~(1 << XSHUT_PIN);
-        delay(30);
-        servoLPos = 170;
-        servoX.write(servoXPos);
-        servoY.write(servoYPos);
-        // VL53L1X 센서 다시 켜기
-        PORTD |= (1 << XSHUT_PIN);
-        delay(30);
-        VL53L1X_init();
       }
     }
   }
