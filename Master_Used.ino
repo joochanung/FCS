@@ -1,14 +1,13 @@
 // 코드를 하나로 합치는 과정에서 반드시 필요한 코드 (아두이노 - 스마트폰 간의 통신 과정)
 // HC-05가 잘 작동하는지 확인하기 위해 사용한 코드. 그 뿐만 아니라 스마트폰와의 연결, 스마트폰에서의 입력과 아두이노에서의 출력 결과가 잘 이루어져 있는지 확인하는 과정.
 // SPI와 모터에 대한 라이브러리를 이용하지 않고 코드를 구현함.
-// 오늘 Master에서는 피에조 부저를 구현하면 아두이노 Master 부분은 완성. Slave 부분에 집중해야 함.
 
 #include <SoftwareSerial.h>
 
 #define BTRXD A2
 #define BTTXD A3
 
-// Arduino RX connected to Bluetooth TX, Arduino TX connected to Bluetooth RX
+// 아두이노의 RX는 블루투스의 TX에, 아두이노의 TX는 블루투스의 RX에 연결
 SoftwareSerial btserial(BTTXD, BTRXD); 
 
 // 소리 출력 및 멈춤 시간을 밀리초 단위로 설정
@@ -95,8 +94,8 @@ ISR(TIMER2_COMPA_vect) {
 }
 
 void loop() {
-  if (btserial.available()) { // Check if there is any data available from Bluetooth
-    char cmd = (char)btserial.read(); // Read the data and convert it from char to int
+  if (btserial.available()) { 
+    char cmd = (char)btserial.read(); 
     status = cmd - '0';
 
     Serial.println(status); // Print received data to the Serial Monitor
@@ -111,10 +110,10 @@ void loop() {
       // 피에조 부저 비활성화
       PORTD &= ~(1 << PD3);
 
-      // 모터 A 제어 (in1Pin = LOW, in2Pin = HIGH, enaPin = 255)
+      // 모터 A 제어 (in1Pin = LOW, in2Pin = HIGH, enaPin = 511)
       PORTB &= ~(1 << PB0); // in1Pin = LOW
       PORTD |= (1 << PD7);  // in2Pin = HIGH
-      OCR1A = 511;          // enaPin = 255 (최대 속도)
+      OCR1A = 511;          // enaPin = 511 (최대 속도)
 
       // 모터 B 제어 (in3Pin = HIGH, in4Pin = LOW, enbPin = 255)
       PORTD |= (1 << PD5);  // in3Pin = HIGH
@@ -132,7 +131,7 @@ void loop() {
       // 모터 A 제어 (in1Pin = LOW, in2Pin = HIGH, enaPin = 511)
       PORTB &= ~(1 << PB0); // in1Pin = LOW
       PORTD |= (1 << PD7);  // in2Pin = HIGH
-      OCR1A = 511;          // enaPin = 255 (최대 속도)
+      OCR1A = 511;          // enaPin = 511 (최대 속도)
 
       // 모터 B 제어 (in3Pin = HIGH, in4Pin = LOW, enbPin = 255)
       PORTD |= (1 << PD5);  // in3Pin = HIGH
@@ -183,11 +182,11 @@ void sendDataToSlave(int data) {
   // Select slave
   PORTB &= ~(1 << PB2);
 
-  // Transfer high and low bytes
+  // 데이터 전송
   SPDR = highByte;
-  while (!(SPSR & (1 << SPIF))) ; // Wait for transmission complete
+  while (!(SPSR & (1 << SPIF))) ; // 다른 전송이 완료할 때까지 대기
   SPDR = lowByte;
-  while (!(SPSR & (1 << SPIF))) ; // Wait for transmission complete
+  while (!(SPSR & (1 << SPIF))) ; // 다른 전송이 완료할 때까지 대기
   
   // Deselect slave
   PORTB |= (1 << PB2);
