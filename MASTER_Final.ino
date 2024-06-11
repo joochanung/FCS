@@ -1,9 +1,7 @@
 // FCS MASTER BOARD
-
 #include <SoftwareSerial.h>
 
-// #define BUZZERPIN A0
-#define LASERPIN 0
+#define LASERPIN 0 
 #define BTRXD A2
 #define BTTXD A3
 #define BUZZER_INT PD2
@@ -31,7 +29,7 @@ void setup() {
   SPCR &= ~(1 << SPE); // SPI 비활성화
   SPCR |= (1 << MSTR) | (1 << SPR0); // 마스터 모드, F_CPU/16 속도
   PORTB |= (1 << SS); // SLAVE 보드 비활성화
-
+  
   btserial.begin(9600);
   Serial.begin(9600);
 
@@ -48,6 +46,7 @@ void setup() {
 
 // Loop 단계
 void loop() {
+  // 스마트폰으로부터 값 받아오기 (블루투스 통신 이용)
   if (btserial.available()) {
     char cmd = (char)btserial.read();
     int status = cmd - '0';
@@ -73,7 +72,7 @@ void loop() {
   }
 }
 
-// Function 단계
+// SPI를 이용해 slave에게 데이터 전송
 void sendDataToSlave(int data) {
   byte highByte = (data >> 8) & 0xFF; // Upper 8 bits
   byte lowByte = data & 0xFF;         // Lower 8 bits
@@ -123,12 +122,12 @@ void DCmotorON() {
   // 모터 A 제어
   PORTB &= ~(1 << IN1); // in1Pin = LOW
   PORTD |= (1 << IN2);  // in2Pin = HIGH
-  OCR1A = 511;          // enaPin = 255 (최대 속도)
+  OCR1A = 511;          // enaPin = 511
 
-  // 모터 B 제어 (in3Pin = HIGH, in4Pin = LOW, enbPin = 255)
+  // 모터 B 제어 
   PORTD |= (1 << IN3);  // in3Pin = HIGH
   PORTD &= ~(1 << IN4); // in4Pin = LOW
-  OCR0A = 100;          // enbPin = 255 (최대 속도)
+  OCR0A = 100;          // enbPin = 100 
 }
 
 void DCmotorOFF() {
@@ -158,15 +157,15 @@ void Piezo_init() {
   TCCR2A |= (1 << COM2B1); // 비교 일치 시 비반전 출력
   TCCR2B |= (1 << CS21); // 분주비 8 설정
   OCR2A = (16000000 / (2 * 8 * frequency)) - 1; // 주파수 설정
-  OCR2B = OCR2A / 10; // 520% 듀티 사이클 설정
+  OCR2B = OCR2A / 10; // 10% 듀티 사이클 설정 (소리 크기 조절)
 }
 
 // Intterupt 단계
 ISR(INT0_vect) {
-  // 인터럽트가 발생하면 피에조 부저를 켭니다
+  // 인터럽트가 발생하면 피에조 부저를 킴
   DDRD |= (1 << BUZZERPWM);
   PORTD |= (1 << BUZZERPWM);
-
+  
   for(uint32_t j = 0; j < 5; j++) {
     for (uint32_t i = 0; i < 64000; i++) {
       asm("nop");
