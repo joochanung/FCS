@@ -20,7 +20,7 @@
 #define BAUD 9600
 #define MYUBRR FOSC/16/BAUD - 1
 
-//(아두이노의 RX는 블루투스의 TX에, 아두이노의 TX는 블루투스의 RX에 연결
+// 아두이노의 RX는 블루투스의 TX에, 아두이노의 TX는 블루투스의 RX에 연결
 SoftwareSerial btserial(BTTXD, BTRXD);
 
 int status = 0;
