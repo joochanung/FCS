@@ -46,6 +46,7 @@ int servoLPos = 170;
 int lockon = 0;
 int pixyflag = 0;
 
+// 조준 여부 확인하는 bool형 변수
 bool lockonX = false;
 bool lockonY = false;
 
@@ -63,6 +64,7 @@ void setup() {
 
   // VL53L1X 초기화
   VL53L1X_init();
+
   DDRD |= (1 << signalPin);
 }
 
@@ -93,7 +95,7 @@ void loop() {
     if (pixy.ccc.numBlocks) {
       Serial.println(pixy.ccc.numBlocks);
       
-      // 가장 큰 블록을 찾기
+      // 가장 오른쪽에 있는 블록을 찾기
       int max = 0;
       for (int i = 1; i < pixy.ccc.numBlocks; i++) {
         if (compareBlockSize(pixy.ccc.blocks[i], pixy.ccc.blocks[max])) {
@@ -101,7 +103,7 @@ void loop() {
         }
       }
 
-      // 가장 큰 블록을 첫 번째 위치로 이동
+      // 가장 오른쪽에 있는 블록을 맨 처음으로 정렬
       if (max != 0) {
         Block temp = pixy.ccc.blocks[0];
         pixy.ccc.blocks[0] = pixy.ccc.blocks[max];
@@ -155,8 +157,7 @@ void loop() {
 
       servoXPos = constrain(servoXPos, 0, 180);
       servoYPos = constrain(servoYPos, 0, 180);
-
-      //if(servoXPos > 90){ // 130도까지 추적
+      
       servoX.write(servoXPos);
       servoY.write(servoYPos);
       // 서보 모터의 위치가 오차 내에 있는 경우
@@ -175,7 +176,7 @@ void loop() {
 
           vl53.clearInterrupt();
 
-          // 추가 서보 모터 제어
+          // 레이저 모듈에 설치된 서보 모터 제어
           float y = radians(180 - servoYPos); // 서보 모터 각도를 라디안으로 변환
           float tanYPrime = (distance * sin(y) + 100) / (distance * cos(y));
           float yPrime = atan(tanYPrime); // y' 계산
@@ -186,10 +187,11 @@ void loop() {
           PORTD &= ~(1 << XSHUT_PIN);
           delay(30); // 센서가 완전히 꺼질 때까지 잠시 대기
             
-          // 추가 서보 모터 제어  
+          // 레이저 모듈 서보 모터 제어  
           servoL.write(servoLPos);
-          delay(20); // 추가 서보 모터가 움직일 시간을 줌
+          delay(20); // 서보 모터가 움직일 시간을 줌
 
+          // 피에조 부저 시그널 전달
           if (lockon == 0) {
             DDRD |= (1 << signalPin);
             PORTD |= (1 << signalPin);
@@ -197,6 +199,7 @@ void loop() {
             PORTD &= ~(1 << signalPin);
           }
 
+          // lockon을 통해 피에조 부저의 주기를 조절
           if (lockon < 2) {
             lockon += 1;            
           }
@@ -204,6 +207,7 @@ void loop() {
           else if (lockon == 2) {
             lockon = 0;
           }
+          
           // VL53L1X 센서 다시 켜기
           PORTD |= (1 << XSHUT_PIN);
             
@@ -262,7 +266,7 @@ void VL53L1X_init(){
   vl53.setTimingBudget(50);
 }
 
-
+// 비교 함수 (x축의 값으로 비교)
 bool compareBlockSize(const Block &a, const Block &b) {
   int A = a.m_x;
   int B = b.m_x; 
