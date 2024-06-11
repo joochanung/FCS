@@ -121,13 +121,12 @@ void loop() {
       bool lockonX = false;
       bool lockonY = false;
 
-<<<<<<< HEAD
       float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 9);
       float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 9);
-=======
+
       float Kpx = map(abs(errorX), 0, pixy.frameWidth / 2, 1, 4);
       float Kpy = map(abs(errorY), 0, pixy.frameHeight / 2, 1, 3);
->>>>>>> 98f2f13eaf1a7f6aac427b15f5b187b1b8d54309
+
 
       // 서보 모터 위치 조정
       if (abs(errorX) > 15) {
