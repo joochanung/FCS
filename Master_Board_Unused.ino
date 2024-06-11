@@ -1,3 +1,5 @@
+// Master 기본 뼈대 코드 (SPI, 블루투스 설정)
+
 #include <SoftwareSerial.h> 
 #include <SPI.h>
 
@@ -18,8 +20,8 @@
 #define BAUD 9600
 #define MYUBRR FOSC/16/BAUD - 1
 
-SoftwareSerial btserial(BTTXD, BTRXD);
 //(아두이노의 RX는 블루투스의 TX에, 아두이노의 TX는 블루투스의 RX에 연결
+SoftwareSerial btserial(BTTXD, BTRXD);
 
 int status = 0;
 
@@ -39,14 +41,14 @@ uint8_t transfer_SPI(uint8_t data){
 void USART_init(unsigned int ubrr){
   ubrr = FOSC/16/BAUD - 1;
 
-  // Set baud rate
+  // baud rate 설정
   UBRR0H = (unsigned char)(ubrr >> 8);
   UBRR0L = (unsigned char)ubrr;
 
-  // Enable receiver and transmitter
+  // RX와 TX 활성화
   UCSR0B = (1 << RXEN0) | (1 << TXEN0);
 
-  // Set frame format: 8 bit data, 2 stop bit
+  //프레임 format 설정: 8 bit data, 2 stop bit
   UCSR0C = (1 << USBS0) | (3 << UCSZ00);
 }
 
