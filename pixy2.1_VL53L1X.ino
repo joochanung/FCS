@@ -1,3 +1,5 @@
+// pixy2에 VL53L1X 모듈을 합친 코드 (모든 라이브러리 이용) -> 최종에서는 일부 라이브러리는 없이 구현 완료
+
 #include <Pixy2.h>
 #include <Servo.h>
 #include "Adafruit_VL53L1X.h"
@@ -145,7 +147,7 @@ void loop() {
           float y = radians(180 - servoYPos); // 서보 모터 각도를 라디안으로 변환
           float tanYPrime = (distance * sin(y) + 70) / (distance * cos(y));
           float yPrime = atan(tanYPrime); // y' 계산
-          int additionalServoPos = 180 - degrees(yPrime); // 170 - y'
+          int additionalServoPos = 170 - degrees(yPrime); // 170 - y' (서보 모터 이슈)
           additionalServoPos = constrain(additionalServoPos, 0, 170); // 유효 범위로 제한
 
           // VL53L1X 센서 끄기
