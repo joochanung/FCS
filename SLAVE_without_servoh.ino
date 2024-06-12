@@ -3,9 +3,9 @@
 
 #define IRQ_PIN 2 // IRQ (PD2)
 #define XSHUT_PIN 3 // XSHUT (PD3)    
-#define servoXPin 5 // X축 서보모터 (PD5)
-#define servoYPin 6 // Y축 서보모터 (PD6)
-#define servoLPin 9 // 레이저 서보모터 (PB1)
+#define servoXPin PD5 // X축 서보모터 (PD5)
+#define servoYPin PD6 // Y축 서보모터 (PD6)
+#define servoLPin PB1 // 레이저 서보모터 (PB1)
 
 #define SS PB2 // SPI SS핀
 #define MOSI PB3 // SPI MOSI핀
@@ -39,6 +39,7 @@ int servoYPos = 180;
 int servoLPos = 170;
 
 int lockon = 0;
+int servoflag = 0;
 int pixyflag = 0;
 
 // 조준 여부 확인하는 bool형 변수
@@ -56,21 +57,18 @@ void setup() {
 
   // 서보X, 서보Y 세팅
   DDRD |= (1 << servoXPin)|(1 << servoYPin);
-  delay(10);
-  servo_write(servoXPin, servoXPos);
-  servo_write(servoYPin, servoYPos);
-
 
   // 서보L 세팅
   DDRB |= (1 << servoLPin);
-  delay(10);
-  servo_write(servoLPin, servoLPos);
-
 
   // VL53L1X 초기화
   VL53L1X_init();
 
   DDRD |= (1 << signalPin);
+
+  servo_write(servoXPin, 180);
+  servo_write(servoYPin, 180);
+  servo_write(servoLPin, 170);
 }
 
 void loop() {
@@ -264,21 +262,21 @@ void servo_write(uint8_t Pin, uint8_t Angle) {
   int delayTime;
 
   if (Pin == servoXPin) {
-    delayTime = map(Angle, 0, 180, 500, 2400);
+    delayTime = map(Angle, 0, 180, 500, 2500);
     PORTD |= (1 << Pin);
     delayMicroseconds(delayTime);
     PORTD &= ~(1 << Pin);
     delayMicroseconds(20000-delayTime);
   }
   if (Pin == servoYPin) {
-    delayTime = map(Angle, 0, 180, 1000, 2500);
+    delayTime = map(Angle, 0, 180, 1450, 2450);
     PORTD |= (1 << Pin);
     delayMicroseconds(delayTime);
     PORTD &= ~(1 << Pin);
     delayMicroseconds(20000-delayTime);
   }
   if (Pin == servoLPin) {
-    delayTime = map(Angle, 0, 180, 1000, 2000);
+    delayTime = map(Angle, 0, 180, 1450, 2450);
     PORTB |= (1 << Pin);
     delayMicroseconds(delayTime);
     PORTB &= ~(1 << Pin);
