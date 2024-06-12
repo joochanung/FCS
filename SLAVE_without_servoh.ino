@@ -56,12 +56,16 @@ void setup() {
 
   // 서보X, 서보Y 세팅
   DDRD |= (1 << servoXPin)|(1 << servoYPin);
+  delay(10);
   servo_write(servoXPin, servoXPos);
   servo_write(servoYPin, servoYPos);
 
+
   // 서보L 세팅
   DDRB |= (1 << servoLPin);
+  delay(10);
   servo_write(servoLPin, servoLPos);
+
 
   // VL53L1X 초기화
   VL53L1X_init();
@@ -257,21 +261,23 @@ bool compareBlockSize(const Block &a, const Block &b) {
 
 // 서보모터 제어 함
 void servo_write(uint8_t Pin, uint8_t Angle) {
+  int delayTime;
+
   if (Pin == servoXPin) {
-    delayTime = map(Angle, 0, 180, 1000, 2000);
+    delayTime = map(Angle, 0, 180, 500, 2400);
     PORTD |= (1 << Pin);
     delayMicroseconds(delayTime);
     PORTD &= ~(1 << Pin);
     delayMicroseconds(20000-delayTime);
   }
-  else if (Pin == servoYPin) {
-    delayTime = map(Angle, 0, 180, 1000, 2000);
+  if (Pin == servoYPin) {
+    delayTime = map(Angle, 0, 180, 1000, 2500);
     PORTD |= (1 << Pin);
     delayMicroseconds(delayTime);
     PORTD &= ~(1 << Pin);
     delayMicroseconds(20000-delayTime);
   }
-  else if (Pin == servoLPin) {
+  if (Pin == servoLPin) {
     delayTime = map(Angle, 0, 180, 1000, 2000);
     PORTB |= (1 << Pin);
     delayMicroseconds(delayTime);
