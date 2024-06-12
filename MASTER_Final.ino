@@ -54,12 +54,12 @@ void loop() {
 
     if(status == 0) { // 정지
       PORTC &= ~(1 << LASERPIN); // LASER MODULE 비활성화
-      DCmotorOFF();  
+      DCmotorOFF(); // DC 모터 정지
     }
 
     else if(status == 1) { // 전진
       PORTC &= ~(1 << LASERPIN); // LASER MODULE 비활성화
-      DCmotorON();
+      DCmotorON(); // DC 모터 가동
     }
     
     else if(status == 2) { // 기동간 사격
@@ -67,7 +67,15 @@ void loop() {
       sendDataToSlave(status); // SLAVE 보드에 전달
       SPCR &= ~(1 << SPE); // SPI 비활성화
       PORTC |= (1 << LASERPIN); // LASER MODULE 활성화
-      DCmotorON();
+      DCmotorON(); // DC 모터 가동
+    }
+
+    else if(status == 3){ // 정지 및 조준 모드
+      SPCR |= (1 << SPE); // SPI 활성화
+      sendDataToSlave(status); // SLAVE 보드에 전달
+      SPCR &= ~(1 << SPE); // SPI 비활성화
+      PORTC |= (1 << LASERPIN); // LASER MODULE 활성화
+      DCmotorOFF(); // DC 모터 정지
     }
   }
 }
@@ -77,8 +85,7 @@ void sendDataToSlave(int data) {
   byte highByte = (data >> 8) & 0xFF; // Upper 8 bits
   byte lowByte = data & 0xFF;         // Lower 8 bits
 
-  // Select slave
-  PORTB &= ~(1 << SS);
+  PORTB &= ~(1 << SS); // SLAVE 보드 활성화
 
   // high & low bytes 변환
   SPDR = highByte;
@@ -86,9 +93,9 @@ void sendDataToSlave(int data) {
   SPDR = lowByte;
   while (!(SPSR & (1 << SPIF))) ; // 다른 변환 완료까지 대기
   
-  // Deselect slave
-  PORTB |= (1 << SS);
+  PORTB |= (1 << SS); // SLAVE 보드 비활성화
 
+  // 시리얼 모니터에서 SLAVE로 데이터 전송 확인
   Serial.print("Sent data: ");
   Serial.println(data);
 }
@@ -103,13 +110,13 @@ void Motor_init(){
   PORTD &= ~(1 << IN2); // in2Pin = LOW
   PORTD &= ~(1 << IN3); // in3Pin = LOW
   PORTD &= ~(1 << IN4); // in4Pin = LOW
-  OCR1A = 0; // ENA PWM 초기값 0
+  OCR1A = 0; // ENA (PB1) PWM 초기값 0
   OCR0A = 0; // ENB (PD6) PWM 초기값 0
 
   // PWM 설정
   // TIMER1 세팅 (MOTOR_A)
   TCCR1A |= (1 << COM1A1); // 비반전 모드
-  TCCR1A |= (1 << WGM11) | (1 << WGM10); // Fast PWM, 8비트
+  TCCR1A |= (1 << WGM10); // Fast PWM, 8비트
   TCCR1B |= (1 << WGM12) | (1 << CS11); // 분주비 8
 
   // TIMER0 세팅 (MOTOR_B)
@@ -122,12 +129,12 @@ void DCmotorON() {
   // 모터 A 제어
   PORTB &= ~(1 << IN1); // in1Pin = LOW
   PORTD |= (1 << IN2);  // in2Pin = HIGH
-  OCR1A = 511;          // enaPin = 511
+  OCR1A = 150;          // enaPin = 150
 
   // 모터 B 제어 
   PORTD |= (1 << IN3);  // in3Pin = HIGH
   PORTD &= ~(1 << IN4); // in4Pin = LOW
-  OCR0A = 100;          // enbPin = 100 
+  OCR0A = 150;          // enbPin = 150
 }
 
 void DCmotorOFF() {
@@ -172,6 +179,7 @@ ISR(INT0_vect) {
     }
   }
   
+  // 일정 시간 지나면 피에조 부저를 끔
   DDRD &= ~(1 << BUZZERPWM);
   PORTD &= ~(1 << BUZZERPWM);
 }
