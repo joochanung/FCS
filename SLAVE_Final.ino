@@ -35,8 +35,8 @@ int servoXPos = 180;
 int servoYPos = 180;
 int servoLPos = 180;
 
-int lockon = 0;    // 피에조 부저의 주기를 조절해주는 변수
-int pixyflag = 0;  // pixy2를 초기화 해주는 변수
+int lockon = 0;    // 피에조 부저에 신호를 보내는 주기를 조절해주는 변수
+int pixyflag = 0;  // pixy2를 활성화 해주는 변수
 
 // 조준 여부 확인하는 bool형 변수
 bool lockonX = false;
@@ -72,7 +72,7 @@ void loop() {
   int status = receivedData;
 
   if (status == 2 || status == 3) { // 기동간 사격(status: 2) or 정지 및 조준 모드(status: 3)
-    // Pixy2 초기화
+    // Pixy2 활성화
     if (pixyflag == 0) {
       pixy.init();
       pixyflag = 1;
@@ -162,15 +162,15 @@ void loop() {
 
           vl53.clearInterrupt();
 
-          // 레이저 모듈에 설치된 서보 모터 제어
-          // 0-180도를 제어하면 실제로 0-90도로 움직임 -> 제어할 때 원하는 값의 2배로 움직여야 함.
+          // 레이저 모듈과 결합된 서보 모터 제어
+          // 0-180도를 제어하면 실제로 0-90도로 움직임 -> 제어할 때 원하는 값의 2배로 움직여야 함
           float y = radians(180 - servoYPos); // 서보 모터 각도를 라디안으로 변환
           float tanYPrime = (distance * sin(y) + 100) / (distance * cos(y));
           float yPrime = atan(tanYPrime) * 2; // y'의 2배로 해서 계산
           servoLPos = 180 - (degrees(yPrime)); // 180 - y'*2
           servoLPos = constrain(servoLPos, 60, 180); // 유효 범위로 제한
 
-          PORTD &= ~(1 << XSHUT_PIN); // VL53L1X 센서 끄기
+          PORTD &= ~(1 << XSHUT_PIN); // 원활한 서보모터 동작을 위해 VL53L1X 센서 끄기
           
           servo_write(servoLPin, servoLPos); // 레이저 모듈 서보 모터 제어  
 
@@ -182,7 +182,7 @@ void loop() {
             PORTD &= ~(1 << signalPin);
           }
 
-          // lockon을 통해 피에조 부저의 주기를 조절
+          // lockon을 통해 피에조 부저에 신호를 주는 주기를 조절
           if (lockon < 2) {
             lockon += 1;            
           }
@@ -191,7 +191,7 @@ void loop() {
             lockon = 0;
           }
           
-          PORTD |= (1 << XSHUT_PIN); // VL53L1X 센서 다시 켜기
+          PORTD |= (1 << XSHUT_PIN); // 동작이 완료되었으니 VL53L1X 센서 다시 켜기
             
           VL53L1X_init();  // VL53L1X 센서 초기화
         }
@@ -200,6 +200,7 @@ void loop() {
   }
 }
 
+// SPI 통신을 통해 블루투스 신호를 받기 위한 인터럽트 서비스 루틴
 ISR(SPI_STC_vect) {
   static byte highByte = 0;
   static bool highByteReceived = false;
@@ -247,7 +248,7 @@ void servo_write(uint8_t Pin, uint8_t Angle) {
 
   if (Pin == servoXPin) { // X축 서보모터
     delayTime = map(Angle, 0, 180, 500, 2500);
-    // duty cycle를 이용해 각도 조절
+    // duty cycle을 직접 구현해 각도 조절
     PORTD |= (1 << Pin);
     delayMicroseconds(delayTime); 
     PORTD &= ~(1 << Pin);
@@ -255,7 +256,7 @@ void servo_write(uint8_t Pin, uint8_t Angle) {
   }
   if (Pin == servoYPin) { // Y축 서보모터
     delayTime = map(Angle, 0, 180, 1000, 2450);
-    // duty cycle를 이용해 각도 조절
+    // duty cycle을 직접 구현해 각도 조절
     PORTD |= (1 << Pin);
     delayMicroseconds(delayTime);
     PORTD &= ~(1 << Pin);
@@ -263,7 +264,7 @@ void servo_write(uint8_t Pin, uint8_t Angle) {
   }
   if (Pin == servoLPin) { // L(레이저) 서보모터
     delayTime = map(Angle, 0, 180, 1500, 2500);
-    // duty cycle를 이용해 각도 조절
+    // duty cycle을 직접 구현해 각도 조절
     PORTB |= (1 << Pin);
     delayMicroseconds(delayTime);
     PORTB &= ~(1 << Pin);
