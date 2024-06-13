@@ -115,14 +115,14 @@ void Motor_init(){
 
   // PWM 설정
   // TIMER1 세팅 (MOTOR_A)
-  TCCR1A |= (1 << COM1A1); // 비반전 모드
-  TCCR1A |= (1 << WGM10); // Fast PWM, 8비트
-  TCCR1B |= (1 << WGM12) | (1 << CS11); // 분주비 8
+  TCCR1A |= (1 << COM1A1); // COM1A 10 >> Clear OC1A/OC1B on Compare Match, set OC1A/OC1B at BOTTOM (non-inverting mode)
+  TCCR1A |= (1 << WGM10);
+  TCCR1B |= (1 << WGM12) | (1 << CS11); // WGM1 0101 >> Fast PWM, 8-bit, 0x00FF~BOTTOM, TOP / CS1 010 >> prescaler 8
 
   // TIMER0 세팅 (MOTOR_B)
-  TCCR0A |= (1 << COM0A1); // 비반전 모드
-  TCCR0A |= (1 << WGM01) | (1 << WGM00); // Fast PWM, 8비트
-  TCCR0B |= (1 << CS01); // 분주비 8
+  TCCR0A |= (1 << COM0A1); // COM0A 10 >> Clear OC0A on Compare Match, set OC0A at BOTTOM (non-inverting mode)
+  TCCR0A |= (1 << WGM01) | (1 << WGM00); // WGM0 011 >> Fast PWM, 0xFF~BOTTOM, MAX
+  TCCR0B |= (1 << CS01); // CS0 010 >> prescaler 8
 }
 
 void DCmotorON() {
@@ -153,16 +153,16 @@ void Piezo_init() {
   // 피에조 부저 관련 추가 코드
   DDRD &= ~(1 << BUZZER_INT); // PD2 (인터럽트 핀)를 입력으로 설정
   PORTD |= (1 << BUZZER_INT); // PD2 핀에 풀업 저항 설정
-  DDRD &= ~(1 << BUZZERPWM); // PD3 (피에조 부저 핀)을 출력으로 설정
+  DDRD &= ~(1 << BUZZERPWM); // PD3 (피에조 부저 핀)을 입력으로 설정
   PORTD &= ~(1 << BUZZERPWM);
 
-  EICRA |= (1 << ISC01); // 인터럽트 신호의 하강 에지에서 인터럽트 발생
+  EICRA |= (1 << ISC01); // 인터럽트 신호의 Falling edge에서 인터럽트 발생
   EIMSK |= (1 << INT0); // INT0 인터럽트 활성화
 
   // 타이머2 설정 - 피에조 부저 주파수 설정
-  TCCR2A |= (1 << WGM21) | (1 << WGM20); // Fast PWM 모드
-  TCCR2A |= (1 << COM2B1); // 비교 일치 시 비반전 출력
-  TCCR2B |= (1 << CS21); // 분주비 8 설정
+  TCCR2A |= (1 << WGM21) | (1 << WGM20); // WGM2 011 >> Fast PWM, 0xFF, BOTTOM, MAX 
+  TCCR2A |= (1 << COM2B1); // COM2B 10 >> Clear OC2B on Compare Match, set OC2B at BOTTOM (non-inverting mode)
+  TCCR2B |= (1 << CS21); // CS2 010 >> prescaler 8
   OCR2A = (16000000 / (2 * 8 * frequency)) - 1; // 주파수 설정
   OCR2B = OCR2A / 10; // 10% 듀티 사이클 설정 (소리 크기 조절)
 }
