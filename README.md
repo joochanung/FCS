@@ -56,5 +56,5 @@ Objective: To use tracking and measurement values in dynamic situations as refer
 
 
 2. If multiple targets exist, the earlier target is prioritized.
-  (If there are multiple targets to the right, the rightmost target is prioritized).
+ - If there are multiple targets to the right, the rightmost target is prioritized.
 ![Tank 2](FCS2.gif)
