@@ -42,8 +42,6 @@
 Fire Control System (FCS) & Visual Verification of Intermittent Target Tracking  
 Objective: To use tracking and measurement values in dynamic situations as reference points for targeting.
 
----
-
 ## Components
 
 ### Sensors
@@ -60,8 +58,6 @@ Objective: To use tracking and measurement values in dynamic situations as refer
 - HC-05 (Bluetooth Module)
 - Piezo Buzzer
 - L298N (Motor Driver)
-
----
 
 ## Code Structure
 
