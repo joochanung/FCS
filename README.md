@@ -53,11 +53,10 @@ Objective: To use tracking and measurement values in dynamic situations as refer
 
 1. The tank moves and fires at the red target while simultaneously aiming for the red target.
    
-![Tank 1](FCS1.gif)
+  ![Tank 1](FCS1.gif)
 
 
 2. If multiple targets exist, the earlier target is prioritized.
  - If there are multiple targets to the right, the rightmost target is prioritized.
 
-
-![Tank 2](FCS2.gif)
+  ![Tank 2](FCS2.gif)
