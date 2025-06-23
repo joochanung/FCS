@@ -44,3 +44,11 @@ Objective: To use tracking and measurement values in dynamic situations as refer
 4) Using the VL53L1X sensor, calculates the rotation angle of the "Sensor Module Servo Motor" based on the measured distance.
 5) Controls the laser module (KY-008) to target the objective.
 6) When targeting is complete and the lock-on flag is activated, sends the targeting completion signal to the Master board.
+
+---
+
+## Results
+
+![Tank 1](FCS1.mp4)
+
+![Tank 2](FCS2.mp4)
