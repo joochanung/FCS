@@ -66,7 +66,7 @@ Objective: To use tracking and measurement values in dynamic situations as refer
 2) Upon receiving a signal via Bluetooth, executes the corresponding command:  
   - DC Motor On & Off  
   - Laser Module On & Off  
-  - Status = 0 (Stop) / (Forward) / (Backward) / (Left) / (Right) / (Targeting)
+  - Status = 0 (Stop) / 1 (Forward) / 2 (Moving and Shooting) / 3 (Stop and Targeting)
 3) Sends the received command signal to the Slave board using SPI communication.
 4) When the Slave board sends a targeting completion signal, receives an interrupt and inputs a PWM signal to the piezo buzzer.
 
