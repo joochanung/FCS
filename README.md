@@ -49,6 +49,6 @@ Objective: To use tracking and measurement values in dynamic situations as refer
 
 ## Results
 
-![Tank 1](FCS1.mp4)
+![Tank 1](FCS1.gif)
 
-![Tank 2](FCS2.mp4)
+![Tank 2](FCS2.gif)
